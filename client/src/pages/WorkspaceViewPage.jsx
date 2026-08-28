@@ -5,6 +5,7 @@ import { useWorkspace } from "../context/WorkspaceContext";
 import { useSocket } from "../context/SocketContext";
 import MessageView from "../components/MessageView";
 import MemberPanel from "../components/MemberPanel";
+import AddChannelMemberModal from "../components/AddChannelMemberModal";
 
 // Deterministic avatar color
 function avatarIndex(str) {
@@ -30,6 +31,7 @@ export default function WorkspaceViewPage() {
 
   const [joining, setJoining] = useState(null);
   const [showMembers, setShowMembers] = useState(false);
+  const [showAddChannelMember, setShowAddChannelMember] = useState(false);
 
   useEffect(() => {
     selectWorkspace(workspaceId);
@@ -242,13 +244,22 @@ export default function WorkspaceViewPage() {
       </aside>
 
       {/* Main content — message view */}
-      <MessageView workspaceId={workspaceId} channel={currentChannel} />
+      <MessageView workspaceId={workspaceId} channel={currentChannel} onShowAddMember={() => setShowMembers(true)} />
 
       {/* Member management modal */}
       {showMembers && (
         <MemberPanel
           workspaceId={workspaceId}
           onClose={() => setShowMembers(false)}
+        />
+      )}
+
+      {/* Add channel member modal */}
+      {showAddChannelMember && currentChannel && (
+        <AddChannelMemberModal
+          workspaceId={workspaceId}
+          channel={currentChannel}
+          onClose={() => setShowAddChannelMember(false)}
         />
       )}
     </div>

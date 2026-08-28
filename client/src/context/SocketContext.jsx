@@ -91,6 +91,13 @@ export function SocketProvider({ children }) {
     return () => socket.off("message:new", callback);
   }, []);
 
+  const onInvitation = useCallback((callback) => {
+    const socket = socketRef.current;
+    if (!socket) return () => {};
+    socket.on("invitation:new", callback);
+    return () => socket.off("invitation:new", callback);
+  }, []);
+
   return (
     <SocketContext.Provider
       value={{
@@ -104,6 +111,7 @@ export function SocketProvider({ children }) {
         startTyping,
         stopTyping,
         onNewMessage,
+        onInvitation,
       }}
     >
       {children}

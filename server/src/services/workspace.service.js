@@ -91,47 +91,203 @@ async function getWorkspace(workspaceId) {
 }
 
 /**
- * Add a member to a workspace by email. Only OWNER/ADMIN can do this.
- * The new member gets the specified role (default MEMBER).
+ * Send an invitation to join a workspace. Only OWNER/ADMIN can do this.
+ * Creates a PENDING invitation instead of directly adding the member.
  */
-async function addMember({ workspaceId, email, role }) {
-  // Find the user to add
-  const userToAdd = await prisma.user.findUnique({
+async function sendInvitation({ workspaceId, email, role, inviterId }) {
+  // Find the user to invite
+  const userToInvite = await prisma.user.findUnique({
     where: { email },
     select: safeUserSelect,
   });
 
-  if (!userToAdd) {
+  if (!userToInvite) {
     throw new AppError(404, "No user found with that email");
   }
 
-  // Check if already a member
-  const existing = await prisma.workspaceMember.findUnique({
+  // Check if already a workspace member
+  const existingMember = await prisma.workspaceMember.findUnique({
     where: {
       userId_workspaceId: {
-        userId: userToAdd.id,
+        userId: userToInvite.id,
         workspaceId,
       },
     },
   });
 
-  if (existing) {
+  if (existingMember) {
     throw new AppError(409, "User is already a member of this workspace");
   }
 
-  // Add the member
-  const membership = await prisma.workspaceMember.create({
-    data: {
-      userId: userToAdd.id,
-      workspaceId,
-      role,
-    },
-    include: {
-      user: { select: safeUserSelect },
+  // Check if there's already a pending invitation
+  const existingInvitation = await prisma.invitation.findUnique({
+    where: {
+      workspaceId_inviteeId: {
+        workspaceId,
+        inviteeId: userToInvite.id,
+      },
     },
   });
 
-  return membership;
+  if (existingInvitation && existingInvitation.status === "PENDING") {
+    throw new AppError(409, "An invitation is already pending for this user");
+  }
+
+  // If there's a declined invitation, update it to pending; otherwise create new
+  let invitation;
+  if (existingInvitation) {
+    invitation = await prisma.invitation.update({
+      where: { id: existingInvitation.id },
+      data: {
+        status: "PENDING",
+        inviterId,
+        role,
+      },
+      include: {
+        workspace: true,
+        inviter: { select: safeUserSelect },
+        invitee: { select: safeUserSelect },
+      },
+    });
+  } else {
+    invitation = await prisma.invitation.create({
+      data: {
+        workspaceId,
+        inviterId,
+        inviteeId: userToInvite.id,
+        role,
+      },
+      include: {
+        workspace: true,
+        inviter: { select: safeUserSelect },
+        invitee: { select: safeUserSelect },
+      },
+    });
+  }
+
+  return invitation;
+}
+
+/**
+ * List pending invitations for a user.
+ */
+async function listInvitations(userId) {
+  const invitations = await prisma.invitation.findMany({
+    where: {
+      inviteeId: userId,
+      status: "PENDING",
+    },
+    include: {
+      workspace: true,
+      inviter: { select: safeUserSelect },
+      invitee: { select: safeUserSelect },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return invitations;
+}
+
+/**
+ * Accept an invitation. Creates a WorkspaceMember and marks invitation as ACCEPTED.
+ */
+async function acceptInvitation({ invitationId, userId }) {
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    include: {
+      workspace: true,
+      inviter: { select: safeUserSelect },
+    },
+  });
+
+  if (!invitation) {
+    throw new AppError(404, "Invitation not found");
+  }
+
+  if (invitation.inviteeId !== userId) {
+    throw new AppError(403, "This invitation is not for you");
+  }
+
+  if (invitation.status !== "PENDING") {
+    throw new AppError(400, `Invitation has already been ${invitation.status.toLowerCase()}`);
+  }
+
+  // Use transaction to atomically accept invitation + create membership
+  const [updatedInvitation, membership] = await prisma.$transaction([
+    prisma.invitation.update({
+      where: { id: invitationId },
+      data: { status: "ACCEPTED" },
+      include: {
+        workspace: true,
+        inviter: { select: safeUserSelect },
+        invitee: { select: safeUserSelect },
+      },
+    }),
+    prisma.workspaceMember.create({
+      data: {
+        userId,
+        workspaceId: invitation.workspaceId,
+        role: invitation.role,
+      },
+      include: {
+        user: { select: safeUserSelect },
+      },
+    }),
+  ]);
+
+  return { invitation: updatedInvitation, membership };
+}
+
+/**
+ * Decline an invitation.
+ */
+async function declineInvitation({ invitationId, userId }) {
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+  });
+
+  if (!invitation) {
+    throw new AppError(404, "Invitation not found");
+  }
+
+  if (invitation.inviteeId !== userId) {
+    throw new AppError(403, "This invitation is not for you");
+  }
+
+  if (invitation.status !== "PENDING") {
+    throw new AppError(400, `Invitation has already been ${invitation.status.toLowerCase()}`);
+  }
+
+  const updatedInvitation = await prisma.invitation.update({
+    where: { id: invitationId },
+    data: { status: "DECLINED" },
+    include: {
+      workspace: true,
+      inviter: { select: safeUserSelect },
+      invitee: { select: safeUserSelect },
+    },
+  });
+
+  return updatedInvitation;
+}
+
+/**
+ * List pending invitations for a workspace (for displaying in member panel).
+ */
+async function listWorkspaceInvitations(workspaceId) {
+  const invitations = await prisma.invitation.findMany({
+    where: {
+      workspaceId,
+      status: "PENDING",
+    },
+    include: {
+      inviter: { select: safeUserSelect },
+      invitee: { select: safeUserSelect },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return invitations;
 }
 
 /**
@@ -181,7 +337,11 @@ module.exports = {
   createWorkspace,
   listWorkspaces,
   getWorkspace,
-  addMember,
+  sendInvitation,
+  listInvitations,
+  acceptInvitation,
+  declineInvitation,
+  listWorkspaceInvitations,
   removeMember,
   deleteWorkspace,
 };

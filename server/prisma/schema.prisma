@@ -1,5 +1,5 @@
 // CollabEngine — Prisma Schema
-// Models: User, Workspace, WorkspaceMember, Channel, ChannelMember, Message
+// Models: User, Workspace, WorkspaceMember, Channel, ChannelMember, Message, Invitation
 
 generator client {
   provider = "prisma-client-js"
@@ -24,6 +24,8 @@ model User {
   workspaceMemberships WorkspaceMember[]
   channelMemberships   ChannelMember[]
   messages             Message[]
+  sentInvitations      Invitation[]       @relation("InvitationInviter")
+  receivedInvitations  Invitation[]       @relation("InvitationInvitee")
 
   @@map("users")
 }
@@ -38,9 +40,10 @@ model Workspace {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  owner    User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members  WorkspaceMember[]
-  channels Channel[]
+  owner       User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     WorkspaceMember[]
+  channels    Channel[]
+  invitations Invitation[]
 
   @@map("workspaces")
 }
@@ -122,3 +125,32 @@ model Message {
   @@index([channelId, createdAt])
   @@map("messages")
 }
+
+// ─── Invitations ─────────────────────────────────────────────────────
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model Invitation {
+  id          String           @id @default(uuid())
+  workspaceId String           @map("workspace_id")
+  inviterId   String           @map("inviter_id")
+  inviteeId   String           @map("invitee_id")
+  role        WorkspaceRole    @default(MEMBER)
+  status      InvitationStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  inviter   User      @relation("InvitationInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee   User      @relation("InvitationInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  // Only one pending invitation per workspace per user
+  @@unique([workspaceId, inviteeId])
+  @@map("invitations")
+}
+

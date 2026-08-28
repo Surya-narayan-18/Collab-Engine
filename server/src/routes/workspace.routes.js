@@ -17,16 +17,36 @@ router.post("/", validate(createWorkspaceSchema), workspaceController.create);
 // GET /api/workspaces — list user's workspaces
 router.get("/", workspaceController.list);
 
+// ─── Invitation routes (must come before /:workspaceId to avoid param conflict) ───
+
+// GET /api/workspaces/invitations — list pending invitations for current user
+router.get("/invitations", workspaceController.listInvitations);
+
+// POST /api/workspaces/invitations/:invitationId/accept
+router.post("/invitations/:invitationId/accept", workspaceController.acceptInvitation);
+
+// POST /api/workspaces/invitations/:invitationId/decline
+router.post("/invitations/:invitationId/decline", workspaceController.declineInvitation);
+
+// ─── Workspace-specific routes ───
+
 // GET /api/workspaces/:workspaceId — get workspace details (member only)
 router.get("/:workspaceId", requireWorkspaceMember, workspaceController.get);
 
-// POST /api/workspaces/:workspaceId/members — add member (OWNER/ADMIN only)
+// POST /api/workspaces/:workspaceId/members — send invitation (OWNER/ADMIN only)
 router.post(
   "/:workspaceId/members",
   requireWorkspaceMember,
   requireWorkspaceRole("OWNER", "ADMIN"),
   validate(addMemberSchema),
   workspaceController.addMember
+);
+
+// GET /api/workspaces/:workspaceId/invitations — list pending invitations for workspace
+router.get(
+  "/:workspaceId/invitations",
+  requireWorkspaceMember,
+  workspaceController.listWorkspaceInvitations
 );
 
 // DELETE /api/workspaces/:workspaceId/members/:userId — remove member (OWNER/ADMIN only)

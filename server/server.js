@@ -13,6 +13,9 @@ const server = http.createServer(app);
 // Initialize Socket.IO on the HTTP server
 const io = initSocket(server);
 
+// Attach io to app so controllers can emit real-time events
+app.set("io", io);
+
 // Connect Redis then start listening
 redis.connect().then(() => {
   server.listen(PORT, () => {

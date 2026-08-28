@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { useWorkspace } from "../context/WorkspaceContext";
+import { useSocket } from "../context/SocketContext";
+import InvitationBanner from "../components/InvitationBanner";
 
 // Deterministic avatar color from string
 function avatarIndex(str) {
@@ -24,7 +26,8 @@ function RoleBadge({ role }) {
 
 export default function WorkspaceListPage() {
   const { user, logout } = useAuth();
-  const { workspaces, fetchWorkspaces, createWorkspace, loading } = useWorkspace();
+  const { workspaces, fetchWorkspaces, createWorkspace, fetchInvitations, loading } = useWorkspace();
+  const { onInvitation } = useSocket();
   const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
@@ -32,7 +35,16 @@ export default function WorkspaceListPage() {
 
   useEffect(() => {
     fetchWorkspaces();
-  }, [fetchWorkspaces]);
+    fetchInvitations();
+  }, [fetchWorkspaces, fetchInvitations]);
+
+  // Listen for real-time invitation notifications
+  useEffect(() => {
+    const unsub = onInvitation(() => {
+      fetchInvitations();
+    });
+    return unsub;
+  }, [onInvitation, fetchInvitations]);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -91,6 +103,9 @@ export default function WorkspaceListPage() {
 
       {/* Content */}
       <main className="max-w-4xl mx-auto px-6 py-10 animate-fade-in">
+        {/* Pending invitations */}
+        <InvitationBanner />
+
         <div className="flex items-end justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold text-ce-text-primary mb-1">Your Workspaces</h2>

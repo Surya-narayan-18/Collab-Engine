@@ -3,14 +3,7 @@ import { get } from "../lib/api";
 import { useSocket } from "../context/SocketContext";
 import { useAuth } from "../context/AuthContext";
 
-// Deterministic avatar color from string
-function avatarIndex(str) {
-  let hash = 0;
-  for (let i = 0; i < (str || "").length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  return Math.abs(hash) % 8;
-}
-
-export default function MessageView({ workspaceId, channel }) {
+export default function MessageView({ workspaceId, channel, onShowAddMember }) {
   const { user } = useAuth();
   const { sendMessage, onNewMessage, joinChannel, leaveChannel, startTyping, stopTyping, typingUsers } = useSocket();
   const [messages, setMessages] = useState([]);
@@ -19,6 +12,7 @@ export default function MessageView({ workspaceId, channel }) {
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [content, setContent] = useState("");
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const prevChannelRef = useRef(null);
 
@@ -67,9 +61,15 @@ export default function MessageView({ workspaceId, channel }) {
     return unsub;
   }, [channel, onNewMessage]);
 
-  // Scroll to bottom on new messages
+  // Smart auto-scroll: only scroll if user is near the bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages.length]);
 
   // Load older messages
@@ -144,10 +144,15 @@ export default function MessageView({ workspaceId, channel }) {
     );
   }
 
+  // Determine if a message belongs to the current user
+  function isSelf(msg) {
+    return msg.user?.id === user?.id;
+  }
+
   return (
-    <div className="flex-1 flex flex-col" style={{ background: 'var(--color-ce-bg-primary)' }}>
+    <div className="flex-1 flex flex-col min-h-0" style={{ background: 'var(--color-ce-bg-primary)' }}>
       {/* ====== Channel Header ====== */}
-      <div className="px-6 py-3 flex items-center justify-between"
+      <div className="px-5 py-2.5 flex items-center justify-between flex-shrink-0"
            style={{ borderBottom: '1px solid var(--color-ce-border-subtle)', background: 'rgba(17, 17, 24, 0.6)', backdropFilter: 'blur(12px)' }}>
         <div className="flex items-center gap-2.5">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ce-text-muted">
@@ -160,10 +165,20 @@ export default function MessageView({ workspaceId, channel }) {
           <div className="w-px h-4 mx-1" style={{ background: 'var(--color-ce-border)' }} />
           <span className="text-xs text-ce-text-muted">Channel</span>
         </div>
+        <button
+          onClick={onShowAddMember}
+          className="channel-header-btn"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Member
+        </button>
       </div>
 
-      {/* ====== Messages ====== */}
-      <div className="flex-1 overflow-y-auto px-5 py-3">
+      {/* ====== Messages Area (scrollable) ====== */}
+      <div className="flex-1 overflow-y-auto px-5 py-3 min-h-0" ref={messagesContainerRef}>
         {/* Load older */}
         {nextCursor && (
           <div className="text-center py-3">
@@ -219,58 +234,45 @@ export default function MessageView({ workspaceId, channel }) {
             </div>
           </div>
         ) : (
-          /* Message list */
+          /* Message list — self right, others left */
           messages.map((msg, i) => {
+            const self = isSelf(msg);
             const prevMsg = messages[i - 1];
-            const sameAuthor = prevMsg && prevMsg.user?.id === msg.user?.id;
+            const sameAuthorAsPrev = prevMsg && prevMsg.user?.id === msg.user?.id;
             const timeDiff = prevMsg
               ? new Date(msg.createdAt) - new Date(prevMsg.createdAt)
               : Infinity;
-            const grouped = sameAuthor && timeDiff < 60000;
-            const colorIdx = avatarIndex(msg.user?.username);
+            const grouped = sameAuthorAsPrev && timeDiff < 60000;
+
+            const senderName = self ? "Self" : (msg.user?.username || "Unknown");
+            const timestamp = new Date(msg.createdAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
 
             return (
               <div
                 key={msg.id}
-                className={`message-row rounded-lg px-3 ${
-                  grouped ? "py-[2px]" : "py-2.5 mt-1"
-                }`}
+                className={`${self ? "message-row-self" : "message-row-other"}`}
               >
-                {!grouped ? (
-                  /* Full message row with avatar */
-                  <div className="flex gap-3">
-                    <div className={`w-9 h-9 rounded-full avatar-gradient-${colorIdx} flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 mt-0.5`}>
-                      {msg.user?.username?.[0]?.toUpperCase() || "?"}
+                <div className="message-content-wrap">
+                  {/* Show sender name if not grouped */}
+                  {!grouped && (
+                    <div className={`message-sender-name ${self ? "message-sender-self" : "message-sender-other"}`}>
+                      {senderName}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-2 mb-0.5">
-                        <span className="font-semibold text-sm" style={{ color: `hsl(${(colorIdx * 45 + 250) % 360}, 70%, 72%)` }}>
-                          {msg.user?.username || "Unknown"}
-                        </span>
-                        <span className="text-[11px] text-ce-text-muted">
-                          {new Date(msg.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                      <p className="text-[14px] text-ce-text-primary leading-relaxed break-words">{msg.content}</p>
-                    </div>
+                  )}
+                  {/* Message bubble */}
+                  <div className={self ? "message-bubble-self" : "message-bubble-other"}>
+                    <p className="message-text">{msg.content}</p>
                   </div>
-                ) : (
-                  /* Grouped message (same author within 1 min) */
-                  <div className="flex gap-3">
-                    <div className="w-9 flex-shrink-0 flex items-center justify-center">
-                      <span className="message-timestamp-hover text-[10px] text-ce-text-muted">
-                        {new Date(msg.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
+                  {/* Timestamp */}
+                  {!grouped && (
+                    <div className={`message-timestamp ${self ? "message-timestamp-self" : "message-timestamp-other"}`}>
+                      {timestamp}
                     </div>
-                    <p className="text-[14px] text-ce-text-primary leading-relaxed break-words">{msg.content}</p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })
@@ -279,7 +281,7 @@ export default function MessageView({ workspaceId, channel }) {
       </div>
 
       {/* ====== Typing Indicator ====== */}
-      <div className="px-6 h-6 flex items-center">
+      <div className="px-5 h-5 flex items-center flex-shrink-0">
         {channelTypers.length > 0 && (
           <div className="flex items-center gap-2 animate-fade-in">
             <span className="flex gap-1">
@@ -295,8 +297,8 @@ export default function MessageView({ workspaceId, channel }) {
         )}
       </div>
 
-      {/* ====== Composer ====== */}
-      <div className="px-5 pb-5 pt-1">
+      {/* ====== Composer (fixed at bottom) ====== */}
+      <div className="px-4 pb-4 pt-1 flex-shrink-0">
         <form
           onSubmit={handleSend}
           className="relative rounded-xl overflow-hidden"
@@ -307,8 +309,8 @@ export default function MessageView({ workspaceId, channel }) {
             value={content}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={`Write a message in #${channel.name}...`}
-            className="w-full px-4 py-3.5 pr-14 text-[14px] text-ce-text-primary placeholder-ce-text-muted focus:outline-none bg-transparent"
+            placeholder={`Type a message in #${channel.name}...`}
+            className="w-full px-4 py-3 pr-14 text-[14px] text-ce-text-primary placeholder-ce-text-muted focus:outline-none bg-transparent"
             maxLength={4000}
           />
           <button

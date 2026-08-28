@@ -23,7 +23,7 @@ function RoleBadge({ role }) {
 
 export default function MemberPanel({ workspaceId, onClose }) {
   const { user } = useAuth();
-  const { currentWorkspace, addMember, removeMember } = useWorkspace();
+  const { currentWorkspace, sendInvitation, removeMember } = useWorkspace();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -39,8 +39,8 @@ export default function MemberPanel({ workspaceId, onClose }) {
     setSuccess("");
     setLoading(true);
     try {
-      const member = await addMember(workspaceId, email);
-      setSuccess(`Added ${member.user?.username || email}`);
+      const invitation = await sendInvitation(workspaceId, email);
+      setSuccess(`Invitation sent to ${invitation.invitee?.username || email}`);
       setEmail("");
     } catch (err) {
       setError(err.message);
@@ -125,7 +125,7 @@ export default function MemberPanel({ workspaceId, onClose }) {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                ) : "Invite"}
+                ) : "Send Invite"}
               </button>
             </div>
             {error && (
@@ -172,12 +172,13 @@ export default function MemberPanel({ workspaceId, onClose }) {
                   <p className="text-xs text-ce-text-muted truncate">{m.user?.email}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0 relative">
                 <RoleBadge role={m.role} />
                 {canManage && m.role !== "OWNER" && m.user?.id !== user?.id && (
                   <button
                     onClick={() => handleRemove(m.user?.id, m.user?.username)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                    className="absolute -right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                    style={{ transform: 'translate(100%, -50%)' }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(248, 113, 113, 0.1)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = ''; }}
                     title="Remove member"

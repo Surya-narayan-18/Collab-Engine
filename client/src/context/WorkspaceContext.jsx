@@ -8,6 +8,7 @@ export function WorkspaceProvider({ children }) {
   const [currentWorkspace, setCurrentWorkspace] = useState(null);
   const [channels, setChannels] = useState([]);
   const [currentChannel, setCurrentChannel] = useState(null);
+  const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchWorkspaces = useCallback(async () => {
@@ -50,12 +51,10 @@ export function WorkspaceProvider({ children }) {
     setChannels(chRes.data.channels);
   }, []);
 
-  const addMember = useCallback(async (workspaceId, email) => {
+  // Send invitation (was addMember — now creates a pending invitation)
+  const sendInvitation = useCallback(async (workspaceId, email) => {
     const res = await post(`/workspaces/${workspaceId}/members`, { email });
-    // Refresh workspace to update member count
-    const wsRes = await get(`/workspaces/${workspaceId}`);
-    setCurrentWorkspace(wsRes.data.workspace);
-    return res.data.member;
+    return res.data.invitation;
   }, []);
 
   const removeMember = useCallback(async (workspaceId, userId) => {
@@ -65,6 +64,33 @@ export function WorkspaceProvider({ children }) {
     setCurrentWorkspace(wsRes.data.workspace);
   }, []);
 
+  // Fetch pending invitations for the current user
+  const fetchInvitations = useCallback(async () => {
+    try {
+      const res = await get("/workspaces/invitations");
+      setInvitations(res.data.invitations);
+    } catch {
+      // Silently fail if invitations can't be fetched
+    }
+  }, []);
+
+  // Accept an invitation
+  const acceptInvitation = useCallback(async (invitationId) => {
+    const res = await post(`/workspaces/invitations/${invitationId}/accept`);
+    // Remove from local invitations list
+    setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+    // Refresh workspaces to include the newly joined workspace
+    await fetchWorkspaces();
+    return res.data;
+  }, [fetchWorkspaces]);
+
+  // Decline an invitation
+  const declineInvitation = useCallback(async (invitationId) => {
+    await post(`/workspaces/invitations/${invitationId}/decline`);
+    // Remove from local invitations list
+    setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+  }, []);
+
   return (
     <WorkspaceContext.Provider
       value={{
@@ -72,14 +98,18 @@ export function WorkspaceProvider({ children }) {
         currentWorkspace,
         channels,
         currentChannel,
+        invitations,
         loading,
         fetchWorkspaces,
         selectWorkspace,
         selectChannel,
         createWorkspace,
         joinChannel,
-        addMember,
+        sendInvitation,
         removeMember,
+        fetchInvitations,
+        acceptInvitation,
+        declineInvitation,
       }}
     >
       {children}

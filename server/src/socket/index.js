@@ -44,6 +44,9 @@ function initSocket(httpServer) {
 
     console.log(`🔌 ${username} connected (${socket.id})`);
 
+    // Join personal room for direct notifications (e.g. invitations)
+    socket.join(`user:${userId}`);
+
     // ── Join workspace room ──────────────────────────────────────────
     socket.on("join:workspace", async (workspaceId) => {
       // Verify membership
