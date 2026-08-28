@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: collabengine-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: collabengine
+      POSTGRES_PASSWORD: collabengine
+      POSTGRES_DB: collabengine
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collabengine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: collabengine-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build: ./server
+    container_name: collabengine-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: postgresql://collabengine:collabengine@postgres:5432/collabengine?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      REDIS_URL: redis://redis:6379
+      CLIENT_URL: http://localhost
+      NODE_ENV: production
+      PORT: 5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - production
+
+  client:
+    build: ./client
+    container_name: collabengine-client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,124 @@
+// CollabEngine — Prisma Schema
+// Models: User, Workspace, WorkspaceMember, Channel, ChannelMember, Message
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Users ───────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String   // bcrypt hash
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  ownedWorkspaces      Workspace[]        @relation("WorkspaceOwner")
+  workspaceMemberships WorkspaceMember[]
+  channelMemberships   ChannelMember[]
+  messages             Message[]
+
+  @@map("users")
+}
+
+// ─── Workspaces ──────────────────────────────────────────────────────
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  owner    User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members  WorkspaceMember[]
+  channels Channel[]
+
+  @@map("workspaces")
+}
+
+// ─── Workspace Members (join table) ──────────────────────────────────
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model WorkspaceMember {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  workspaceId String        @map("workspace_id")
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now()) @map("joined_at")
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@map("workspace_members")
+}
+
+// ─── Channels ────────────────────────────────────────────────────────
+
+model Channel {
+  id          String   @id @default(uuid())
+  name        String
+  workspaceId String   @map("workspace_id")
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   ChannelMember[]
+  messages  Message[]
+
+  // Channel names must be unique within a workspace
+  @@unique([workspaceId, name])
+  @@map("channels")
+}
+
+// ─── Channel Members (join table) ────────────────────────────────────
+
+model ChannelMember {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  channelId String   @map("channel_id")
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channelId])
+  @@map("channel_members")
+}
+
+// ─── Messages ────────────────────────────────────────────────────────
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  userId    String   @map("user_id")
+  channelId String   @map("channel_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  // Critical index for cursor-based pagination: fetch messages in a channel ordered by time
+  @@index([channelId, createdAt])
+  @@map("messages")
+}
