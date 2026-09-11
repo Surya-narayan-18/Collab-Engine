@@ -1,6 +1,6 @@
 # CollabEngine
 
-An AI-powered real-time collaboration platform built as a full-stack portfolio project. Features workspace management, channel-based messaging, live presence tracking, and typing indicators.
+An AI-powered real-time collaboration platform built as a full-stack project. Features workspace management, channel-based messaging, live presence tracking, and typing indicators.
 
 ## Tech Stack
 

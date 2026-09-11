@@ -24,11 +24,12 @@ async function get(req, res) {
   res.json({ status: "success", data: { workspace } });
 }
 
-/** POST /api/workspaces/:workspaceId/members — now sends an invitation */
+/** POST /api/workspaces/:workspaceId/members — sends an invitation (by email or userId) */
 async function addMember(req, res) {
   const invitation = await workspaceService.sendInvitation({
     workspaceId: req.params.workspaceId,
     email: req.body.email,
+    userId: req.body.userId,
     role: req.body.role,
     inviterId: req.user.id,
   });
@@ -68,11 +69,21 @@ async function declineInvitation(req, res) {
   res.json({ status: "success", data: { invitation } });
 }
 
-/** GET /api/workspaces/:workspaceId/invitations — list pending invitations for a workspace */
+/** GET /api/workspaces/:workspaceId/invitations — list pending invitations for a workspace (OWNER/ADMIN) */
 async function listWorkspaceInvitations(req, res) {
   const invitations = await workspaceService.listWorkspaceInvitations(req.params.workspaceId);
 
   res.json({ status: "success", data: { invitations } });
+}
+
+/** DELETE /api/workspaces/:workspaceId/invitations/:invitationId — revoke a pending invitation (OWNER/ADMIN) */
+async function revokeInvitation(req, res) {
+  await workspaceService.revokeInvitation({
+    invitationId: req.params.invitationId,
+    workspaceId: req.params.workspaceId,
+  });
+
+  res.json({ status: "success", message: "Invitation revoked" });
 }
 
 /** DELETE /api/workspaces/:workspaceId/members/:userId */
@@ -101,6 +112,7 @@ module.exports = {
   acceptInvitation,
   declineInvitation,
   listWorkspaceInvitations,
+  revokeInvitation,
   removeMember,
   remove,
 };

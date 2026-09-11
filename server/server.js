@@ -16,8 +16,16 @@ const io = initSocket(server);
 // Attach io to app so controllers can emit real-time events
 app.set("io", io);
 
-// Connect Redis then start listening
-redis.connect().then(() => {
+// Connect Redis, flush stale presence keys, then start listening
+redis.connect().then(async () => {
+  // Clear all presence keys from a previous server session so no user
+  // appears "online" from a stale Redis entry.
+  const staleKeys = await redis.keys("presence:*");
+  if (staleKeys.length) {
+    await redis.del(...staleKeys);
+    console.log(`🧹 Cleared ${staleKeys.length} stale presence key(s)`);
+  }
+
   server.listen(PORT, () => {
     console.log(
       `✅ CollabEngine server running on http://localhost:${PORT} [${config.NODE_ENV}]`

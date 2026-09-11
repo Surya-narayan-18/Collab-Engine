@@ -51,9 +51,12 @@ export function WorkspaceProvider({ children }) {
     setChannels(chRes.data.channels);
   }, []);
 
-  // Send invitation (was addMember — now creates a pending invitation)
-  const sendInvitation = useCallback(async (workspaceId, email) => {
-    const res = await post(`/workspaces/${workspaceId}/members`, { email });
+  // Send invitation — accepts { email } or { userId } (exactly one)
+  const sendInvitation = useCallback(async (workspaceId, { email, userId }) => {
+    const body = {};
+    if (email) body.email = email;
+    if (userId) body.userId = userId;
+    const res = await post(`/workspaces/${workspaceId}/members`, body);
     return res.data.invitation;
   }, []);
 

@@ -21,10 +21,10 @@ const registerSchema = z.object({
 });
 
 const loginSchema = z.object({
-  email: z
+  identifier: z
     .string()
-    .email("Invalid email address")
-    .transform((v) => v.toLowerCase().trim()),
+    .min(1, "Email or user ID is required")
+    .transform((v) => v.trim()),
   password: z.string().min(1, "Password is required"),
 });
 

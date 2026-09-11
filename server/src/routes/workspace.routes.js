@@ -42,11 +42,20 @@ router.post(
   workspaceController.addMember
 );
 
-// GET /api/workspaces/:workspaceId/invitations — list pending invitations for workspace
+// GET /api/workspaces/:workspaceId/invitations — list pending invitations for workspace (OWNER/ADMIN only — Bug #5 fix)
 router.get(
   "/:workspaceId/invitations",
   requireWorkspaceMember,
+  requireWorkspaceRole("OWNER", "ADMIN"),
   workspaceController.listWorkspaceInvitations
+);
+
+// DELETE /api/workspaces/:workspaceId/invitations/:invitationId — revoke invitation (OWNER/ADMIN only — Bug #7)
+router.delete(
+  "/:workspaceId/invitations/:invitationId",
+  requireWorkspaceMember,
+  requireWorkspaceRole("OWNER", "ADMIN"),
+  workspaceController.revokeInvitation
 );
 
 // DELETE /api/workspaces/:workspaceId/members/:userId — remove member (OWNER/ADMIN only)

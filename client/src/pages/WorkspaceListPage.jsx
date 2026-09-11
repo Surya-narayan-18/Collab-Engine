@@ -32,6 +32,7 @@ export default function WorkspaceListPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [createError, setCreateError] = useState("");
+  const [createLoading, setCreateLoading] = useState(false);
 
   useEffect(() => {
     fetchWorkspaces();
@@ -49,6 +50,7 @@ export default function WorkspaceListPage() {
   async function handleCreate(e) {
     e.preventDefault();
     setCreateError("");
+    setCreateLoading(true);
     try {
       const ws = await createWorkspace(newName);
       setNewName("");
@@ -56,30 +58,32 @@ export default function WorkspaceListPage() {
       navigate(`/workspaces/${ws.id}`);
     } catch (err) {
       setCreateError(err.message);
+    } finally {
+      setCreateLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--color-ce-bg-primary)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--color-ce-bg-secondary)' }}>
       {/* Header */}
-      <header className="sticky top-0 z-10 glass-card border-b"
-              style={{ borderColor: 'var(--color-ce-border-subtle)' }}>
+      <header className="sticky top-0 z-10 bg-white"
+              style={{ borderBottom: '1px solid var(--color-ce-border)' }}>
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="inline-flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-brand flex items-center justify-center shadow-md shadow-ce-accent/15">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
+                 style={{ background: 'var(--color-ce-accent)' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-ce-text-primary">Collab</span>
-              <span className="text-gradient">Engine</span>
+            <h1 className="text-xl font-bold tracking-tight text-ce-text-primary">
+              Collab<span style={{ color: 'var(--color-ce-accent)' }}>Engine</span>
             </h1>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-full avatar-gradient-${avatarIndex(user?.username)} flex items-center justify-center text-white text-sm font-semibold shadow-md`}>
+              <div className={`w-8 h-8 rounded-full avatar-color-${avatarIndex(user?.username)} flex items-center justify-center text-white text-sm font-semibold shadow-sm`}>
                 {user?.username?.[0]?.toUpperCase() || "?"}
               </div>
               <span className="text-sm text-ce-text-secondary font-medium hidden sm:block">
@@ -115,7 +119,10 @@ export default function WorkspaceListPage() {
           </div>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-brand text-white text-sm font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-ce-accent/25 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-white text-sm font-semibold rounded-xl transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer"
+            style={{ background: 'var(--color-ce-accent)' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-ce-accent-hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-ce-accent)'; }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -127,7 +134,7 @@ export default function WorkspaceListPage() {
 
         {/* Create form */}
         {showCreate && (
-          <div className="mb-8 glass-card-elevated rounded-xl p-5 animate-fade-in-up">
+          <div className="mb-8 card-elevated rounded-xl p-5 animate-fade-in-up">
             <form onSubmit={handleCreate} className="flex gap-3">
               <div className="relative flex-1">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ce-text-muted pointer-events-none">
@@ -142,19 +149,36 @@ export default function WorkspaceListPage() {
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="Enter workspace name..."
                   required
-                  className="w-full pl-11 pr-4 py-2.5 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-glow transition-all duration-200"
-                  style={{ background: 'var(--color-ce-bg-tertiary)', border: '1px solid var(--color-ce-border)' }}
+                  disabled={createLoading}
+                  className="w-full pl-11 pr-4 py-2.5 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus transition-all duration-200 disabled:opacity-50"
+                  style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
                 />
               </div>
               <button
                 type="submit"
-                className="px-6 py-2.5 bg-gradient-brand text-white text-sm font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-ce-accent/20 cursor-pointer"
+                disabled={createLoading}
+                className="px-6 py-2.5 text-white text-sm font-semibold rounded-xl transition-all duration-200 hover:shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                style={{ background: 'var(--color-ce-accent)' }}
+                onMouseEnter={(e) => { if (!createLoading) e.currentTarget.style.background = 'var(--color-ce-accent-hover)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-ce-accent)'; }}
               >
-                Create
+                {createLoading ? (
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : "Create"}
               </button>
             </form>
             {createError && (
-              <p className="text-ce-danger text-sm mt-3 ml-1">{createError}</p>
+              <div className="error-alert mt-3 text-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span>{createError}</span>
+              </div>
             )}
           </div>
         )}
@@ -163,20 +187,21 @@ export default function WorkspaceListPage() {
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="flex flex-col items-center gap-4">
-              <div className="w-10 h-10 rounded-full border-2 border-ce-accent border-t-transparent animate-spin" />
+              <div className="w-10 h-10 rounded-full border-2 animate-spin"
+                   style={{ borderColor: 'var(--color-ce-accent)', borderTopColor: 'transparent' }} />
               <p className="text-sm text-ce-text-tertiary">Loading workspaces...</p>
             </div>
           </div>
         ) : workspaces.length === 0 ? (
-          <div className="text-center py-24 animate-fade-in-up">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-brand opacity-20 flex items-center justify-center">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <div className="empty-state animate-fade-in-up">
+            <div className="empty-state-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
               </svg>
             </div>
-            <p className="text-ce-text-secondary text-lg font-medium mb-2">No workspaces yet</p>
-            <p className="text-ce-text-muted text-sm">Create your first workspace to start collaborating</p>
+            <p className="empty-state-title">No workspaces yet</p>
+            <p className="empty-state-message">Create your first workspace to start collaborating</p>
           </div>
         ) : (
           <div className="grid gap-3 stagger-children">
@@ -184,18 +209,20 @@ export default function WorkspaceListPage() {
               <button
                 key={ws.id}
                 onClick={() => navigate(`/workspaces/${ws.id}`)}
-                className="workspace-card glass-card rounded-xl p-5 text-left cursor-pointer group animate-fade-in-up relative overflow-hidden"
+                className="workspace-card card rounded-xl p-5 text-left cursor-pointer group animate-fade-in-up relative overflow-hidden"
               >
-                {/* Left gradient accent bar */}
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-brand rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Left accent bar on hover */}
+                <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                     style={{ background: 'var(--color-ce-accent)' }} />
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`w-11 h-11 rounded-xl avatar-gradient-${avatarIndex(ws.name)} flex items-center justify-center text-white text-lg font-bold shadow-md flex-shrink-0`}>
+                    <div className={`w-11 h-11 rounded-xl avatar-color-${avatarIndex(ws.name)} flex items-center justify-center text-white text-lg font-bold shadow-sm flex-shrink-0`}>
                       {ws.name?.[0]?.toUpperCase() || "W"}
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-ce-text-primary group-hover:text-gradient transition-colors duration-200">
+                      <h3 className="text-base font-semibold text-ce-text-primary transition-colors duration-200"
+                          style={{ color: 'var(--color-ce-text-primary)' }}>
                         {ws.name}
                       </h3>
                       <p className="text-sm text-ce-text-tertiary mt-0.5 flex items-center gap-3">

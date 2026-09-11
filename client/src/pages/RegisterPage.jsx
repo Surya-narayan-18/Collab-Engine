@@ -19,7 +19,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(email, username, password);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message);
       if (err.details) setFieldErrors(err.details);
@@ -33,30 +33,27 @@ export default function RegisterPage() {
     if (!password) return { width: "0%", color: "transparent", label: "" };
     if (password.length < 6) return { width: "25%", color: "var(--color-ce-danger)", label: "Weak" };
     if (password.length < 10) return { width: "50%", color: "var(--color-ce-warning)", label: "Fair" };
-    if (password.length < 14) return { width: "75%", color: "var(--color-ce-gradient-mid)", label: "Good" };
+    if (password.length < 14) return { width: "75%", color: "var(--color-ce-accent)", label: "Good" };
     return { width: "100%", color: "var(--color-ce-success)", label: "Strong" };
   };
   const strength = getPasswordStrength();
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-         style={{ background: 'var(--color-ce-bg-primary)' }}>
-      {/* Floating gradient orbs */}
-      <div className="auth-bg-orb auth-bg-orb-1" />
-      <div className="auth-bg-orb auth-bg-orb-2" />
+    <div className="min-h-screen flex items-center justify-center p-4"
+         style={{ background: 'var(--color-ce-bg-secondary)' }}>
 
       <div className="w-full max-w-md relative z-10 animate-fade-in-up">
         {/* Logo & Tagline */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-brand flex items-center justify-center shadow-lg shadow-ce-accent/20">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+                 style={{ background: 'var(--color-ce-accent)' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              <span className="text-ce-text-primary">Collab</span>
-              <span className="text-gradient">Engine</span>
+            <h1 className="text-3xl font-bold tracking-tight text-ce-text-primary">
+              Collab<span style={{ color: 'var(--color-ce-accent)' }}>Engine</span>
             </h1>
           </div>
           <p className="text-ce-text-secondary text-base">Start collaborating in seconds</p>
@@ -65,17 +62,17 @@ export default function RegisterPage() {
         {/* Register Form */}
         <form
           onSubmit={handleSubmit}
-          className="glass-card-elevated rounded-2xl p-8 space-y-5"
+          className="card-elevated rounded-2xl p-8 space-y-5"
         >
+          {/* Error alert */}
           {error && (
-            <div className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm"
-                 style={{ background: 'rgba(248, 113, 113, 0.08)', border: '1px solid rgba(248, 113, 113, 0.2)' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="error-alert">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              <span className="text-ce-danger">{error}</span>
+              <span>{error}</span>
             </div>
           )}
 
@@ -94,13 +91,13 @@ export default function RegisterPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-glow transition-all duration-200"
-                style={{ background: 'var(--color-ce-bg-tertiary)', border: '1px solid var(--color-ce-border)' }}
+                className="w-full pl-11 pr-4 py-3 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus transition-all duration-200"
+                style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
                 placeholder="name@company.com"
               />
             </div>
             {fieldErrors.email && (
-              <p className="text-ce-danger text-xs mt-1.5 ml-1">{fieldErrors.email[0]}</p>
+              <p className="text-xs mt-1.5 ml-1" style={{ color: 'var(--color-ce-danger)' }}>{fieldErrors.email[0]}</p>
             )}
           </div>
 
@@ -119,13 +116,13 @@ export default function RegisterPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-glow transition-all duration-200"
-                style={{ background: 'var(--color-ce-bg-tertiary)', border: '1px solid var(--color-ce-border)' }}
+                className="w-full pl-11 pr-4 py-3 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus transition-all duration-200"
+                style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
                 placeholder="Choose a username"
               />
             </div>
             {fieldErrors.username && (
-              <p className="text-ce-danger text-xs mt-1.5 ml-1">{fieldErrors.username[0]}</p>
+              <p className="text-xs mt-1.5 ml-1" style={{ color: 'var(--color-ce-danger)' }}>{fieldErrors.username[0]}</p>
             )}
           </div>
 
@@ -144,15 +141,15 @@ export default function RegisterPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-glow transition-all duration-200"
-                style={{ background: 'var(--color-ce-bg-tertiary)', border: '1px solid var(--color-ce-border)' }}
+                className="w-full pl-11 pr-4 py-3 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus transition-all duration-200"
+                style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
                 placeholder="Create a strong password"
               />
             </div>
             {/* Password strength bar */}
             {password && (
               <div className="mt-2 ml-1">
-                <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--color-ce-bg-elevated)' }}>
+                <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--color-ce-bg-tertiary)' }}>
                   <div className="h-full rounded-full transition-all duration-300"
                        style={{ width: strength.width, background: strength.color }} />
                 </div>
@@ -160,7 +157,7 @@ export default function RegisterPage() {
               </div>
             )}
             {fieldErrors.password && (
-              <p className="text-ce-danger text-xs mt-1.5 ml-1">{fieldErrors.password[0]}</p>
+              <p className="text-xs mt-1.5 ml-1" style={{ color: 'var(--color-ce-danger)' }}>{fieldErrors.password[0]}</p>
             )}
           </div>
 
@@ -168,7 +165,10 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-gradient-brand text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-ce-accent/25 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none cursor-pointer"
+            className="w-full py-3 text-white font-semibold rounded-xl transition-all duration-200 hover:shadow-md active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100 cursor-pointer"
+            style={{ background: 'var(--color-ce-accent)' }}
+            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = 'var(--color-ce-accent-hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-ce-accent)'; }}
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">
@@ -184,7 +184,9 @@ export default function RegisterPage() {
           {/* Link to login */}
           <p className="text-center text-sm text-ce-text-tertiary pt-1">
             Already have an account?{" "}
-            <Link to="/login" className="text-ce-accent hover:text-ce-accent-hover font-medium transition-colors">
+            <Link to="/login" className="font-medium transition-colors no-underline" style={{ color: 'var(--color-ce-accent)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-ce-accent-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-ce-accent)'; }}>
               Sign in
             </Link>
           </p>

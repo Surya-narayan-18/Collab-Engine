@@ -15,7 +15,8 @@ async function register(req, res) {
 
 /**
  * POST /api/auth/login
- * Body: { email, password }
+ * Body: { identifier, password }
+ * `identifier` can be an email address or a user ID (UUID).
  */
 async function login(req, res) {
   const { user, token } = await authService.login(req.body);

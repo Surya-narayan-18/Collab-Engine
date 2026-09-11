@@ -42,6 +42,10 @@ function initSocket(httpServer) {
     const userId = socket.user.id;
     const username = socket.user.username;
 
+    // Track which workspaces this socket has joined so we can reliably
+    // clean up presence on disconnect (socket.rooms may already be empty).
+    const joinedWorkspaces = new Set();
+
     console.log(`🔌 ${username} connected (${socket.id})`);
 
     // Join personal room for direct notifications (e.g. invitations)
@@ -59,6 +63,7 @@ function initSocket(httpServer) {
       }
 
       socket.join(`workspace:${workspaceId}`);
+      joinedWorkspaces.add(workspaceId);
 
       // Track presence in Redis
       await redis.sadd(`presence:${workspaceId}`, userId);
@@ -148,13 +153,8 @@ function initSocket(httpServer) {
     socket.on("disconnect", async () => {
       console.log(`🔌 ${username} disconnected (${socket.id})`);
 
-      // Remove from all workspace presence sets
-      // Get all rooms this socket was in
-      const workspaceRooms = [...socket.rooms].filter((r) =>
-        r.startsWith("workspace:")
-      );
-      for (const room of workspaceRooms) {
-        const workspaceId = room.replace("workspace:", "");
+      // Use our tracked set instead of socket.rooms (which is unreliable here)
+      for (const workspaceId of joinedWorkspaces) {
         await redis.srem(`presence:${workspaceId}`, userId);
 
         const onlineIds = await redis.smembers(`presence:${workspaceId}`);
@@ -162,8 +162,9 @@ function initSocket(httpServer) {
           where: { id: { in: onlineIds } },
           select: safeUserSelect,
         });
-        io.to(room).emit("presence:update", onlineUsers);
+        io.to(`workspace:${workspaceId}`).emit("presence:update", onlineUsers);
       }
+      joinedWorkspaces.clear();
     });
   });
 

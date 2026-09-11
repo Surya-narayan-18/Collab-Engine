@@ -8,12 +8,22 @@ const createWorkspaceSchema = z.object({
     .trim(),
 });
 
-const addMemberSchema = z.object({
-  email: z
-    .string()
-    .email("Invalid email address")
-    .transform((v) => v.toLowerCase().trim()),
-  role: z.enum(["ADMIN", "MEMBER"]).default("MEMBER"),
-});
+const addMemberSchema = z
+  .object({
+    email: z
+      .string()
+      .email("Invalid email address")
+      .transform((v) => v.toLowerCase().trim())
+      .optional(),
+    userId: z
+      .string()
+      .uuid("Invalid user ID")
+      .optional(),
+    role: z.enum(["ADMIN", "MEMBER"]).default("MEMBER"),
+  })
+  .refine(
+    (data) => (data.email && !data.userId) || (!data.email && data.userId),
+    { message: "Provide exactly one of 'email' or 'userId', not both or neither" }
+  );
 
 module.exports = { createWorkspaceSchema, addMemberSchema };

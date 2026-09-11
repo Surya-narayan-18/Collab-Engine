@@ -9,6 +9,11 @@ const BCRYPT_COST_FACTOR = 12;
 const JWT_EXPIRY = "24h";
 
 /**
+ * UUID v4 pattern — used to detect whether a login identifier is a user ID.
+ */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
  * Register a new user.
  * @param {{ email: string, username: string, password: string }} data
  * @returns {Promise<{ user: object, token: string }>}
@@ -49,24 +54,29 @@ async function register({ email, username, password }) {
 }
 
 /**
- * Login with email and password.
- * @param {{ email: string, password: string }} data
+ * Login with an identifier (email or user ID) and password.
+ * Detects whether the identifier looks like a UUID and resolves the user
+ * by `id` or `email` accordingly. Password verification always applies.
+ *
+ * @param {{ identifier: string, password: string }} data
  * @returns {Promise<{ user: object, token: string }>}
  */
-async function login({ email, password }) {
-  // Find user by email — need password for comparison
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
+async function login({ identifier, password }) {
+  const isUUID = UUID_RE.test(identifier);
+
+  // Resolve user by id or email
+  const user = isUUID
+    ? await prisma.user.findUnique({ where: { id: identifier } })
+    : await prisma.user.findUnique({ where: { email: identifier.toLowerCase() } });
 
   if (!user) {
-    throw new AppError(401, "Invalid email or password");
+    throw new AppError(401, "Invalid credentials");
   }
 
   // Compare password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new AppError(401, "Invalid email or password");
+    throw new AppError(401, "Invalid credentials");
   }
 
   // Generate JWT

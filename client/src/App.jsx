@@ -3,10 +3,18 @@ import { AuthProvider } from "./context/AuthContext";
 import { WorkspaceProvider } from "./context/WorkspaceContext";
 import { SocketProvider } from "./context/SocketContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import WorkspaceListPage from "./pages/WorkspaceListPage";
 import WorkspaceViewPage from "./pages/WorkspaceViewPage";
+
+function LandingOrDashboard() {
+  // If user has a token, redirect to dashboard; otherwise show landing
+  const token = localStorage.getItem("token");
+  if (token) return <Navigate to="/dashboard" replace />;
+  return <LandingPage />;
+}
 
 export default function App() {
   return (
@@ -15,10 +23,11 @@ export default function App() {
         <SocketProvider>
           <WorkspaceProvider>
             <Routes>
+              <Route path="/" element={<LandingOrDashboard />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route
-                path="/"
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <WorkspaceListPage />

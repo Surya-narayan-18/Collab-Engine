@@ -10,6 +10,7 @@ export default function MessageView({ workspaceId, channel, onShowAddMember }) {
   const [nextCursor, setNextCursor] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [content, setContent] = useState("");
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -36,13 +37,16 @@ export default function MessageView({ workspaceId, channel, onShowAddMember }) {
     setMessages([]);
     setNextCursor(null);
     setLoadingInitial(true);
+    setLoadError(null);
 
     get(`/workspaces/${workspaceId}/channels/${channel.id}/messages?limit=50`)
       .then((res) => {
         setMessages(res.data.messages.reverse());
         setNextCursor(res.data.nextCursor);
       })
-      .catch(() => {})
+      .catch((err) => {
+        setLoadError(err.message || "Failed to load messages");
+      })
       .finally(() => setLoadingInitial(false));
   }, [workspaceId, channel]);
 
@@ -131,14 +135,14 @@ export default function MessageView({ workspaceId, channel, onShowAddMember }) {
   if (!channel) {
     return (
       <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--color-ce-bg-primary)' }}>
-        <div className="text-center animate-fade-in-up">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-brand opacity-15 flex items-center justify-center">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <div className="empty-state animate-fade-in-up">
+          <div className="empty-state-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
           </div>
-          <p className="text-ce-text-secondary text-lg font-medium mb-1">Select a channel</p>
-          <p className="text-ce-text-muted text-sm">Choose a channel from the sidebar to start chatting</p>
+          <p className="empty-state-title">Select a channel</p>
+          <p className="empty-state-message">Choose a channel from the sidebar to start chatting</p>
         </div>
       </div>
     );
@@ -152,8 +156,8 @@ export default function MessageView({ workspaceId, channel, onShowAddMember }) {
   return (
     <div className="flex-1 flex flex-col min-h-0" style={{ background: 'var(--color-ce-bg-primary)' }}>
       {/* ====== Channel Header ====== */}
-      <div className="px-5 py-2.5 flex items-center justify-between flex-shrink-0"
-           style={{ borderBottom: '1px solid var(--color-ce-border-subtle)', background: 'rgba(17, 17, 24, 0.6)', backdropFilter: 'blur(12px)' }}>
+      <div className="px-5 py-2.5 flex items-center justify-between flex-shrink-0 hidden md:flex"
+           style={{ borderBottom: '1px solid var(--color-ce-border)', background: 'white' }}>
         <div className="flex items-center gap-2.5">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ce-text-muted">
             <path d="M4 9h16" />
@@ -185,9 +189,9 @@ export default function MessageView({ workspaceId, channel, onShowAddMember }) {
             <button
               onClick={loadMore}
               disabled={loadingMore}
-              className="inline-flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-full transition-all duration-200 cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-full transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ color: 'var(--color-ce-accent)', border: '1px solid var(--color-ce-accent-soft)', background: 'var(--color-ce-accent-soft)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-ce-accent-glow)'; }}
+              onMouseEnter={(e) => { if (!loadingMore) e.currentTarget.style.background = 'var(--color-ce-accent-glow)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-ce-accent-soft)'; }}
             >
               {loadingMore ? (
@@ -214,23 +218,61 @@ export default function MessageView({ workspaceId, channel, onShowAddMember }) {
         {loadingInitial ? (
           <div className="flex justify-center py-20">
             <div className="flex flex-col items-center gap-4 animate-fade-in">
-              <div className="w-8 h-8 rounded-full border-2 border-ce-accent border-t-transparent animate-spin" />
+              <div className="w-8 h-8 rounded-full border-2 animate-spin"
+                   style={{ borderColor: 'var(--color-ce-accent)', borderTopColor: 'transparent' }} />
               <p className="text-sm text-ce-text-muted">Loading messages...</p>
+            </div>
+          </div>
+        ) : loadError ? (
+          /* Error state — failed to load messages */
+          <div className="flex items-center justify-center h-full">
+            <div className="error-state animate-fade-in-up">
+              <div className="error-state-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <p className="error-state-title">Failed to load messages</p>
+              <p className="error-state-message">{loadError}</p>
+              <button
+                onClick={() => {
+                  setLoadError(null);
+                  setLoadingInitial(true);
+                  get(`/workspaces/${workspaceId}/channels/${channel.id}/messages?limit=50`)
+                    .then((res) => {
+                      setMessages(res.data.messages.reverse());
+                      setNextCursor(res.data.nextCursor);
+                    })
+                    .catch((err) => setLoadError(err.message || "Failed to load messages"))
+                    .finally(() => setLoadingInitial(false));
+                }}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 cursor-pointer"
+                style={{ color: 'var(--color-ce-accent)', background: 'var(--color-ce-accent-soft)', border: '1px solid var(--color-ce-accent-soft)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-ce-accent-glow)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-ce-accent-soft)'; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23,4 23,10 17,10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+                Try again
+              </button>
             </div>
           </div>
         ) : messages.length === 0 ? (
           /* Empty channel state */
           <div className="flex items-center justify-center h-full">
-            <div className="text-center animate-fade-in-up">
-              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center"
-                   style={{ background: 'var(--color-ce-accent-soft)' }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ stroke: 'var(--color-ce-accent)' }}>
+            <div className="empty-state animate-fade-in-up">
+              <div className="empty-state-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" stroke="#2F6FED">
                   <path d="M12 20h9" />
                   <path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z" />
                 </svg>
               </div>
-              <p className="text-ce-text-secondary font-medium mb-1">This is the beginning of #{channel.name}</p>
-              <p className="text-ce-text-muted text-sm">Send the first message to get the conversation started.</p>
+              <p className="empty-state-title">This is the beginning of #{channel.name}</p>
+              <p className="empty-state-message">Send the first message to get the conversation started.</p>
             </div>
           </div>
         ) : (
@@ -318,8 +360,10 @@ export default function MessageView({ workspaceId, channel, onShowAddMember }) {
             disabled={!content.trim()}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
-              background: content.trim() ? 'linear-gradient(135deg, var(--color-ce-gradient-start), var(--color-ce-gradient-mid))' : 'var(--color-ce-bg-hover)',
+              background: content.trim() ? 'var(--color-ce-accent)' : 'var(--color-ce-bg-hover)',
             }}
+            onMouseEnter={(e) => { if (content.trim()) e.currentTarget.style.background = 'var(--color-ce-accent-hover)'; }}
+            onMouseLeave={(e) => { if (content.trim()) e.currentTarget.style.background = 'var(--color-ce-accent)'; }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="22" y1="2" x2="11" y2="13" />

@@ -6,8 +6,12 @@ export default function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-950">
-        <div className="animate-spin h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full" />
+      <div className="flex items-center justify-center h-screen" style={{ background: 'var(--color-ce-bg-primary)' }}>
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="w-10 h-10 rounded-full border-2 animate-spin"
+               style={{ borderColor: 'var(--color-ce-accent)', borderTopColor: 'transparent' }} />
+          <p className="text-sm text-ce-text-tertiary">Loading...</p>
+        </div>
       </div>
     );
   }
