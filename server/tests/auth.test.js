@@ -35,7 +35,7 @@ describe("Auth — Login by Identifier", () => {
     await cleanDatabase();
     testUser = await createTestUser({
       email: "auth@test.com",
-      username: "authuser",
+      userId: "authuser",
       password: TEST_PASSWORD,
     });
   });

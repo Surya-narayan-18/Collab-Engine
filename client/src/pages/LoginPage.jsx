@@ -64,7 +64,7 @@ export default function LoginPage() {
 
           {/* Identifier (Email or User ID) */}
           <div>
-            <label className="block text-sm font-medium text-ce-text-secondary mb-2">Email or User ID</label>
+            <label className="block text-sm font-medium text-ce-text-secondary mb-2">Email or user ID</label>
             <div className="relative">
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ce-text-muted pointer-events-none">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

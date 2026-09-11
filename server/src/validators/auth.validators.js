@@ -5,14 +5,19 @@ const registerSchema = z.object({
     .string()
     .email("Invalid email address")
     .transform((v) => v.toLowerCase().trim()),
-  username: z
+  userId: z
     .string()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username must be at most 30 characters")
+    .min(3, "User ID must be at least 3 characters")
+    .max(30, "User ID must be at most 30 characters")
     .regex(
       /^[a-zA-Z0-9_-]+$/,
-      "Username can only contain letters, numbers, hyphens, and underscores"
+      "User ID can only contain letters, numbers, hyphens, and underscores"
     )
+    .transform((v) => v.toLowerCase().trim()),
+  userName: z
+    .string()
+    .min(1, "Display name is required")
+    .max(50, "Display name must be at most 50 characters")
     .transform((v) => v.trim()),
   password: z
     .string()

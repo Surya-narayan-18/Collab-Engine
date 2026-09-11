@@ -138,12 +138,12 @@ export default function AddChannelMemberModal({ workspaceId, channel, onClose })
                         className="flex items-center justify-between py-2 px-3 rounded-xl"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-8 h-8 rounded-full avatar-color-${avatarIndex(m.user?.username)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
-                            {m.user?.username?.[0]?.toUpperCase() || "?"}
+                          <div className={`w-8 h-8 rounded-full avatar-color-${avatarIndex(m.user?.userId)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
+                            {m.user?.userName?.[0]?.toUpperCase() || "?"}
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm text-ce-text-primary font-medium truncate leading-tight">
-                              {m.user?.username}
+                              {m.user?.userName}
                             </p>
                             <p className="text-[11px] text-ce-text-muted truncate">{m.user?.email}</p>
                           </div>
@@ -174,12 +174,12 @@ export default function AddChannelMemberModal({ workspaceId, channel, onClose })
                         className="flex items-center justify-between py-2 px-3 rounded-xl transition-colors hover:bg-ce-bg-hover"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`w-8 h-8 rounded-full avatar-color-${avatarIndex(m.user?.username)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
-                            {m.user?.username?.[0]?.toUpperCase() || "?"}
+                          <div className={`w-8 h-8 rounded-full avatar-color-${avatarIndex(m.user?.userId)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
+                            {m.user?.userName?.[0]?.toUpperCase() || "?"}
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm text-ce-text-primary font-medium truncate leading-tight">
-                              {m.user?.username}
+                              {m.user?.userName}
                             </p>
                             <p className="text-[11px] text-ce-text-muted truncate">{m.user?.email}</p>
                           </div>

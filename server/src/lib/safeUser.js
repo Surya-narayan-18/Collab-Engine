@@ -9,7 +9,8 @@
 const safeUserSelect = {
   id: true,
   email: true,
-  username: true,
+  userId: true,
+  userName: true,
   createdAt: true,
   updatedAt: true,
   // password: deliberately excluded

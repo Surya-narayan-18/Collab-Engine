@@ -33,3 +33,7 @@ export function post(path, body) {
 export function del(path) {
   return api(path, { method: "DELETE" });
 }
+
+export function patch(path, body) {
+  return api(path, { method: "PATCH", body: JSON.stringify(body) });
+}

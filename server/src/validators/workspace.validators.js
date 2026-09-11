@@ -26,4 +26,10 @@ const addMemberSchema = z
     { message: "Provide exactly one of 'email' or 'userId', not both or neither" }
   );
 
-module.exports = { createWorkspaceSchema, addMemberSchema };
+const updateMemberRoleSchema = z.object({
+  role: z.enum(["ADMIN", "MEMBER"], {
+    errorMap: () => ({ message: "Role must be either ADMIN or MEMBER" }),
+  }),
+});
+
+module.exports = { createWorkspaceSchema, addMemberSchema, updateMemberRoleSchema };

@@ -2,15 +2,31 @@ const authService = require("../services/auth.service");
 
 /**
  * POST /api/auth/register
- * Body: { email, username, password }
+ * Body: { email, userId, userName, password }
  */
 async function register(req, res) {
-  const { user, token } = await authService.register(req.body);
+  try {
+    const { user, token } = await authService.register(req.body);
 
-  res.status(201).json({
-    status: "success",
-    data: { user, token },
-  });
+    res.status(201).json({
+      status: "success",
+      data: { user, token },
+    });
+  } catch (err) {
+    // Race condition: unique constraint violation on email or userId
+    if (err.code === "P2002") {
+      const target = err.meta?.target;
+      if (target && target.includes("user_id")) {
+        const AppError = require("../errors/AppError");
+        throw new AppError(409, "User ID already taken");
+      }
+      if (target && target.includes("email")) {
+        const AppError = require("../errors/AppError");
+        throw new AppError(409, "Email already in use");
+      }
+    }
+    throw err;
+  }
 }
 
 /**

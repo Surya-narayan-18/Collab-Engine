@@ -19,12 +19,13 @@ let userCounter = 0;
 async function createTestUser(overrides = {}) {
   userCounter++;
   const email = overrides.email || `testuser${userCounter}_${Date.now()}@test.com`;
-  const username = overrides.username || `testuser${userCounter}_${Date.now()}`;
+  const userId = overrides.userId || `testuser${userCounter}_${Date.now()}`;
+  const userName = overrides.userName || userId;
   const password = overrides.password || "TestPassword123!";
 
   const res = await request(app)
     .post("/api/auth/register")
-    .send({ email, username, password })
+    .send({ email, userId, userName, password })
     .expect(201);
 
   return {

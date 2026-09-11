@@ -286,7 +286,7 @@ export default function MessageView({ workspaceId, channel, onShowAddMember }) {
               : Infinity;
             const grouped = sameAuthorAsPrev && timeDiff < 60000;
 
-            const senderName = self ? "Self" : (msg.user?.username || "Unknown");
+            const senderName = self ? "Self" : (msg.user?.userName || "Unknown");
             const timestamp = new Date(msg.createdAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",

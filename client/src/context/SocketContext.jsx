@@ -39,11 +39,11 @@ export function SocketProvider({ children }) {
     });
 
     // Typing indicators
-    socket.on("typing:update", ({ userId, username, channelId, isTyping }) => {
+    socket.on("typing:update", ({ userId, userName, channelId, isTyping }) => {
       setTypingUsers((prev) => {
         const channelTypers = { ...(prev[channelId] || {}) };
         if (isTyping) {
-          channelTypers[userId] = username;
+          channelTypers[userId] = userName;
         } else {
           delete channelTypers[userId];
         }

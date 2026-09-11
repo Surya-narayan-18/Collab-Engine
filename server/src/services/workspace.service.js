@@ -434,6 +434,41 @@ async function deleteWorkspace(workspaceId) {
   return { deleted: true };
 }
 
+/**
+ * Update a member's role in a workspace. Only OWNER can do this.
+ * Cannot change the OWNER's own role or set role to OWNER.
+ */
+async function updateMemberRole({ workspaceId, memberUserId, newRole }) {
+  // Find the membership to update
+  const membership = await prisma.workspaceMember.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId: memberUserId,
+        workspaceId,
+      },
+    },
+  });
+
+  if (!membership) {
+    throw new AppError(404, "User is not a member of this workspace");
+  }
+
+  // Cannot change the OWNER's role
+  if (membership.role === "OWNER") {
+    throw new AppError(403, "Cannot change the workspace owner's role");
+  }
+
+  const updated = await prisma.workspaceMember.update({
+    where: { id: membership.id },
+    data: { role: newRole },
+    include: {
+      user: { select: safeUserSelect },
+    },
+  });
+
+  return updated;
+}
+
 module.exports = {
   createWorkspace,
   listWorkspaces,
@@ -446,5 +481,6 @@ module.exports = {
   listWorkspaceInvitations,
   revokeInvitation,
   removeMember,
+  updateMemberRole,
   deleteWorkspace,
 };

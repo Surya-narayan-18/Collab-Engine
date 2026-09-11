@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from "react";
-import { get, post, del } from "../lib/api";
+import { get, post, del, patch } from "../lib/api";
 
 const WorkspaceContext = createContext(null);
 
@@ -51,6 +51,14 @@ export function WorkspaceProvider({ children }) {
     setChannels(chRes.data.channels);
   }, []);
 
+  const createChannel = useCallback(async (workspaceId, name) => {
+    const res = await post(`/workspaces/${workspaceId}/channels`, { name });
+    // Refresh channel list
+    const chRes = await get(`/workspaces/${workspaceId}/channels`);
+    setChannels(chRes.data.channels);
+    return res.data.channel;
+  }, []);
+
   // Send invitation — accepts { email } or { userId } (exactly one)
   const sendInvitation = useCallback(async (workspaceId, { email, userId }) => {
     const body = {};
@@ -62,6 +70,13 @@ export function WorkspaceProvider({ children }) {
 
   const removeMember = useCallback(async (workspaceId, userId) => {
     await del(`/workspaces/${workspaceId}/members/${userId}`);
+    // Refresh workspace to update member list
+    const wsRes = await get(`/workspaces/${workspaceId}`);
+    setCurrentWorkspace(wsRes.data.workspace);
+  }, []);
+
+  const updateMemberRole = useCallback(async (workspaceId, userId, role) => {
+    await patch(`/workspaces/${workspaceId}/members/${userId}`, { role });
     // Refresh workspace to update member list
     const wsRes = await get(`/workspaces/${workspaceId}`);
     setCurrentWorkspace(wsRes.data.workspace);
@@ -108,8 +123,10 @@ export function WorkspaceProvider({ children }) {
         selectChannel,
         createWorkspace,
         joinChannel,
+        createChannel,
         sendInvitation,
         removeMember,
+        updateMemberRole,
         fetchInvitations,
         acceptInvitation,
         declineInvitation,

@@ -67,7 +67,7 @@ export default function InvitationBanner() {
                     {inv.workspace?.name}
                   </p>
                   <p className="text-xs text-ce-text-muted truncate">
-                    Invited by <span className="text-ce-text-secondary font-medium">{inv.inviter?.username}</span>
+                    Invited by <span className="text-ce-text-secondary font-medium">{inv.inviter?.userName}</span>
                   </p>
                 </div>
               </div>

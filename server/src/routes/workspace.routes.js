@@ -4,7 +4,7 @@ const channelRoutes = require("./channel.routes");
 const authenticate = require("../middleware/authenticate");
 const { requireWorkspaceMember, requireWorkspaceRole } = require("../middleware/authorize");
 const validate = require("../middleware/validate");
-const { createWorkspaceSchema, addMemberSchema } = require("../validators/workspace.validators");
+const { createWorkspaceSchema, addMemberSchema, updateMemberRoleSchema } = require("../validators/workspace.validators");
 
 const router = Router();
 
@@ -56,6 +56,15 @@ router.delete(
   requireWorkspaceMember,
   requireWorkspaceRole("OWNER", "ADMIN"),
   workspaceController.revokeInvitation
+);
+
+// PATCH /api/workspaces/:workspaceId/members/:userId — change member role (OWNER only)
+router.patch(
+  "/:workspaceId/members/:userId",
+  requireWorkspaceMember,
+  requireWorkspaceRole("OWNER"),
+  validate(updateMemberRoleSchema),
+  workspaceController.updateMemberRole
 );
 
 // DELETE /api/workspaces/:workspaceId/members/:userId — remove member (OWNER/ADMIN only)

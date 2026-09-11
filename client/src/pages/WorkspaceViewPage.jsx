@@ -25,6 +25,7 @@ export default function WorkspaceViewPage() {
     selectWorkspace,
     selectChannel,
     joinChannel,
+    createChannel,
     loading,
   } = useWorkspace();
   const { joinWorkspace, connected, onlineUsers } = useSocket();
@@ -33,6 +34,10 @@ export default function WorkspaceViewPage() {
   const [showMembers, setShowMembers] = useState(false);
   const [showAddChannelMember, setShowAddChannelMember] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [createChannelError, setCreateChannelError] = useState("");
+  const [createChannelLoading, setCreateChannelLoading] = useState(false);
 
   useEffect(() => {
     selectWorkspace(workspaceId);
@@ -71,6 +76,22 @@ export default function WorkspaceViewPage() {
       handleJoinChannel(ch);
     }
     setSidebarOpen(false);
+  }
+
+  async function handleCreateChannel(e) {
+    e.preventDefault();
+    setCreateChannelError("");
+    setCreateChannelLoading(true);
+    try {
+      const ch = await createChannel(workspaceId, newChannelName.trim());
+      setNewChannelName("");
+      setShowCreateChannel(false);
+      selectChannel({ ...ch, isMember: true });
+    } catch (err) {
+      setCreateChannelError(err.message);
+    } finally {
+      setCreateChannelLoading(false);
+    }
   }
 
   if (loading && !currentWorkspace) {
@@ -130,10 +151,59 @@ export default function WorkspaceViewPage() {
           <h3 className="text-[11px] font-semibold text-ce-text-muted uppercase tracking-widest">
             Channels
           </h3>
-          <span className="text-[11px] text-ce-text-muted">
-            {channels.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-ce-text-muted">
+              {channels.length}
+            </span>
+            <button
+              onClick={() => { setShowCreateChannel(!showCreateChannel); setCreateChannelError(""); }}
+              className="w-5 h-5 rounded flex items-center justify-center text-ce-text-muted hover:text-ce-accent hover:bg-ce-bg-hover transition-all cursor-pointer"
+              title="Create channel"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {/* Create channel inline form */}
+        {showCreateChannel && (
+          <form onSubmit={handleCreateChannel} className="px-2 mb-2 animate-fade-in">
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={newChannelName}
+                onChange={(e) => setNewChannelName(e.target.value)}
+                placeholder="channel-name"
+                required
+                disabled={createChannelLoading}
+                className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg text-xs text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus transition-all duration-200 disabled:opacity-50"
+                style={{ background: 'var(--color-ce-bg-tertiary)', border: '1px solid var(--color-ce-border)' }}
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={createChannelLoading || !newChannelName.trim()}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: 'var(--color-ce-accent)' }}
+              >
+                {createChannelLoading ? "..." : "Add"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowCreateChannel(false); setNewChannelName(""); setCreateChannelError(""); }}
+                className="px-2 py-1.5 rounded-lg text-xs text-ce-text-muted hover:text-ce-text-primary hover:bg-ce-bg-hover transition-all cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+            {createChannelError && (
+              <p className="text-[10px] mt-1 px-1" style={{ color: 'var(--color-ce-danger)' }}>{createChannelError}</p>
+            )}
+          </form>
+        )}
 
         <div className="space-y-0.5">
           {channels.map((ch) => {
@@ -192,13 +262,13 @@ export default function WorkspaceViewPage() {
                   style={{ cursor: 'default' }}
                 >
                   <div className="relative flex-shrink-0">
-                    <div className={`w-7 h-7 rounded-full avatar-color-${avatarIndex(u.username)} flex items-center justify-center text-white text-[11px] font-semibold`}>
-                      {u.username?.[0]?.toUpperCase() || "?"}
+                    <div className={`w-7 h-7 rounded-full avatar-color-${avatarIndex(u.userId)} flex items-center justify-center text-white text-[11px] font-semibold`}>
+                      {u.userName?.[0]?.toUpperCase() || "?"}
                     </div>
                     <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
                           style={{ background: 'var(--color-ce-success)', borderColor: 'var(--color-ce-bg-secondary)' }} />
                   </div>
-                  <span className="truncate">{u.username}</span>
+                  <span className="truncate">{u.userName}</span>
                   {u.id === user?.id && (
                     <span className="text-[10px] text-ce-text-muted ml-auto">(you)</span>
                   )}
@@ -214,8 +284,8 @@ export default function WorkspaceViewPage() {
            style={{ borderTop: '1px solid var(--color-ce-border)' }}>
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="relative flex-shrink-0">
-            <div className={`w-8 h-8 rounded-full avatar-color-${avatarIndex(user?.username)} flex items-center justify-center text-white text-xs font-semibold`}>
-              {user?.username?.[0]?.toUpperCase() || "?"}
+            <div className={`w-8 h-8 rounded-full avatar-color-${avatarIndex(user?.userId)} flex items-center justify-center text-white text-xs font-semibold`}>
+              {user?.userName?.[0]?.toUpperCase() || "?"}
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
                   style={{
@@ -224,7 +294,7 @@ export default function WorkspaceViewPage() {
                   }} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm text-ce-text-primary font-medium truncate leading-tight">{user?.username}</p>
+            <p className="text-sm text-ce-text-primary font-medium truncate leading-tight">{user?.userName}</p>
             <p className="text-[10px] leading-tight" style={{ color: connected ? 'var(--color-ce-success)' : 'var(--color-ce-text-muted)' }}>
               {connected ? "Connected" : "Reconnecting..."}
             </p>

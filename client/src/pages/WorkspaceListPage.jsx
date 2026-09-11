@@ -83,11 +83,11 @@ export default function WorkspaceListPage() {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-full avatar-color-${avatarIndex(user?.username)} flex items-center justify-center text-white text-sm font-semibold shadow-sm`}>
-                {user?.username?.[0]?.toUpperCase() || "?"}
+              <div className={`w-8 h-8 rounded-full avatar-color-${avatarIndex(user?.userId)} flex items-center justify-center text-white text-sm font-semibold shadow-sm`}>
+                {user?.userName?.[0]?.toUpperCase() || "?"}
               </div>
-              <span className="text-sm text-ce-text-secondary font-medium hidden sm:block">
-                {user?.username}
+              <span className="text-sm text-ce-text-primary font-medium truncate">
+                {user?.userName}
               </span>
             </div>
             <button

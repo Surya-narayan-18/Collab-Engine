@@ -37,7 +37,7 @@ const authenticate = async (req, res, next) => {
 
   // Fetch user from DB to ensure they still exist
   const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
+    where: { id: payload.sub },
     select: safeUserSelect,
   });
 

@@ -21,9 +21,121 @@ function RoleBadge({ role }) {
   );
 }
 
+function MemberActions({ member, workspaceId, canManage, isOwner, currentUserId, onError }) {
+  const { removeMember, updateMemberRole } = useWorkspace();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Don't show actions for self, OWNER members, or if user can't manage
+  if (!canManage || member.role === "OWNER" || member.user?.id === currentUserId) {
+    return null;
+  }
+
+  async function handleRemove() {
+    if (!confirm(`Remove ${member.user?.userName} from this workspace?`)) return;
+    setLoading(true);
+    try {
+      await removeMember(workspaceId, member.user?.id);
+    } catch (err) {
+      onError(err.message);
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
+  }
+
+  async function handleRoleChange(newRole) {
+    setLoading(true);
+    try {
+      await updateMemberRole(workspaceId, member.user?.id, newRole);
+    } catch (err) {
+      onError(err.message);
+    } finally {
+      setLoading(false);
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        disabled={loading}
+        className="member-action-trigger"
+        title="Member actions"
+      >
+        {loading ? (
+          <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="5" r="1" />
+            <circle cx="12" cy="12" r="1" />
+            <circle cx="12" cy="19" r="1" />
+          </svg>
+        )}
+      </button>
+
+      {/* Dropdown menu */}
+      {open && (
+        <>
+          {/* Backdrop to close dropdown */}
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="member-actions-dropdown animate-scale-in">
+            {/* Role changes — OWNER only */}
+            {isOwner && (
+              <>
+                {member.role === "MEMBER" && (
+                  <button
+                    onClick={() => handleRoleChange("ADMIN")}
+                    className="member-actions-item"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    Make Admin
+                  </button>
+                )}
+                {member.role === "ADMIN" && (
+                  <button
+                    onClick={() => handleRoleChange("MEMBER")}
+                    className="member-actions-item"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Make Member
+                  </button>
+                )}
+                <div className="member-actions-divider" />
+              </>
+            )}
+
+            {/* Remove */}
+            <button
+              onClick={handleRemove}
+              className="member-actions-item member-actions-danger"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="17" y1="11" x2="22" y2="11" />
+              </svg>
+              Remove
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function MemberPanel({ workspaceId, onClose }) {
   const { user } = useAuth();
-  const { currentWorkspace, sendInvitation, removeMember } = useWorkspace();
+  const { currentWorkspace, sendInvitation } = useWorkspace();
   const [inviteMode, setInviteMode] = useState("email"); // "email" or "userId"
   const [email, setEmail] = useState("");
   const [userId, setUserId] = useState("");
@@ -34,6 +146,7 @@ export default function MemberPanel({ workspaceId, onClose }) {
   const members = currentWorkspace?.members || [];
   const myMembership = members.find((m) => m.user?.id === user?.id);
   const canManage = myMembership?.role === "OWNER" || myMembership?.role === "ADMIN";
+  const isOwner = myMembership?.role === "OWNER";
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -43,22 +156,13 @@ export default function MemberPanel({ workspaceId, onClose }) {
     try {
       const payload = inviteMode === "email" ? { email } : { userId };
       const invitation = await sendInvitation(workspaceId, payload);
-      setSuccess(`Invitation sent to ${invitation.invitee?.username || email || userId}`);
+      setSuccess(`Invitation sent to ${invitation.invitee?.userName || email || userId}`);
       setEmail("");
       setUserId("");
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleRemove(memberUserId, username) {
-    if (!confirm(`Remove ${username} from this workspace?`)) return;
-    try {
-      await removeMember(workspaceId, memberUserId);
-    } catch (err) {
-      setError(err.message);
     }
   }
 
@@ -214,12 +318,12 @@ export default function MemberPanel({ workspaceId, onClose }) {
               className="flex items-center justify-between py-2.5 px-3 rounded-xl transition-colors group hover:bg-ce-bg-hover"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className={`w-9 h-9 rounded-full avatar-color-${avatarIndex(m.user?.username)} flex items-center justify-center text-white text-sm font-semibold flex-shrink-0`}>
-                  {m.user?.username?.[0]?.toUpperCase() || "?"}
+                <div className={`w-9 h-9 rounded-full avatar-color-${avatarIndex(m.user?.userId)} flex items-center justify-center text-white text-sm font-semibold flex-shrink-0`}>
+                  {m.user?.userName?.[0]?.toUpperCase() || "?"}
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm text-ce-text-primary font-medium truncate leading-tight">
-                    {m.user?.username}
+                    {m.user?.userName}
                     {m.user?.id === user?.id && (
                       <span className="text-ce-text-muted text-xs ml-1.5">(you)</span>
                     )}
@@ -227,21 +331,16 @@ export default function MemberPanel({ workspaceId, onClose }) {
                   <p className="text-xs text-ce-text-muted truncate">{m.user?.email}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 relative">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <RoleBadge role={m.role} />
-                {canManage && m.role !== "OWNER" && m.user?.id !== user?.id && (
-                  <button
-                    onClick={() => handleRemove(m.user?.id, m.user?.username)}
-                    className="absolute -right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer hover:bg-red-50"
-                    style={{ transform: 'translate(100%, -50%)' }}
-                    title="Remove member"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                )}
+                <MemberActions
+                  member={m}
+                  workspaceId={workspaceId}
+                  canManage={canManage}
+                  isOwner={isOwner}
+                  currentUserId={user?.id}
+                  onError={setError}
+                />
               </div>
             </div>
           ))}
@@ -250,3 +349,4 @@ export default function MemberPanel({ workspaceId, onClose }) {
     </div>
   );
 }
+

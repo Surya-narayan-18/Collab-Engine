@@ -26,7 +26,7 @@ function initSocket(httpServer) {
     try {
       const payload = jwt.verify(token, config.JWT_SECRET);
       const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
+        where: { id: payload.sub },
         select: safeUserSelect,
       });
       if (!user) return next(new Error("User not found"));
@@ -40,13 +40,13 @@ function initSocket(httpServer) {
   // ─── Connection Handler ────────────────────────────────────────────
   io.on("connection", (socket) => {
     const userId = socket.user.id;
-    const username = socket.user.username;
+    const userName = socket.user.userName;
 
     // Track which workspaces this socket has joined so we can reliably
     // clean up presence on disconnect (socket.rooms may already be empty).
     const joinedWorkspaces = new Set();
 
-    console.log(`🔌 ${username} connected (${socket.id})`);
+    console.log(`🔌 ${userName} connected (${socket.id})`);
 
     // Join personal room for direct notifications (e.g. invitations)
     socket.join(`user:${userId}`);
@@ -134,7 +134,7 @@ function initSocket(httpServer) {
     socket.on("typing:start", (channelId) => {
       socket.to(`channel:${channelId}`).emit("typing:update", {
         userId,
-        username,
+        userName,
         channelId,
         isTyping: true,
       });
@@ -143,7 +143,7 @@ function initSocket(httpServer) {
     socket.on("typing:stop", (channelId) => {
       socket.to(`channel:${channelId}`).emit("typing:update", {
         userId,
-        username,
+        userName,
         channelId,
         isTyping: false,
       });
@@ -151,7 +151,7 @@ function initSocket(httpServer) {
 
     // ── Disconnect ───────────────────────────────────────────────────
     socket.on("disconnect", async () => {
-      console.log(`🔌 ${username} disconnected (${socket.id})`);
+      console.log(`🔌 ${userName} disconnected (${socket.id})`);
 
       // Use our tracked set instead of socket.rooms (which is unreliable here)
       for (const workspaceId of joinedWorkspaces) {

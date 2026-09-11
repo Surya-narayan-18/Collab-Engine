@@ -39,9 +39,9 @@ describe("Invitation System", () => {
   beforeEach(async () => {
     await cleanDatabase();
     // Create three users: owner, a regular member, and an outsider
-    owner = await createTestUser({ email: "owner@test.com", username: "owner" });
-    member = await createTestUser({ email: "member@test.com", username: "member_user" });
-    outsider = await createTestUser({ email: "outsider@test.com", username: "outsider" });
+    owner = await createTestUser({ email: "owner@test.com", userId: "owner" });
+    member = await createTestUser({ email: "member@test.com", userId: "member_user" });
+    outsider = await createTestUser({ email: "outsider@test.com", userId: "outsider" });
 
     // Owner creates a workspace
     workspace = await createTestWorkspace(owner.token, "Test WS");

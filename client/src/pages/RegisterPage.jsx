@@ -6,7 +6,8 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
+  const [handleId, setHandleId] = useState("");
+  const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -18,7 +19,7 @@ export default function RegisterPage() {
     setFieldErrors({});
     setLoading(true);
     try {
-      await register(email, username, password);
+      await register(email, handleId, userName, password);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -101,9 +102,36 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {/* Username */}
+          {/* User ID (unique handle) */}
           <div>
-            <label className="block text-sm font-medium text-ce-text-secondary mb-2">Username</label>
+            <label className="block text-sm font-medium text-ce-text-secondary mb-2">User ID</label>
+            <div className="relative">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ce-text-muted pointer-events-none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                  <polyline points="10 17 15 12 10 7" />
+                  <line x1="15" y1="12" x2="3" y2="12" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                required
+                value={handleId}
+                onChange={(e) => setHandleId(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus transition-all duration-200"
+                style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
+                placeholder="e.g. surya_18 (used for login)"
+              />
+            </div>
+            <p className="text-[11px] text-ce-text-muted mt-1 ml-1">Letters, numbers, hyphens, underscores. Used for login &amp; mentions.</p>
+            {fieldErrors.userId && (
+              <p className="text-xs mt-1.5 ml-1" style={{ color: 'var(--color-ce-danger)' }}>{fieldErrors.userId[0]}</p>
+            )}
+          </div>
+
+          {/* Display Name */}
+          <div>
+            <label className="block text-sm font-medium text-ce-text-secondary mb-2">Display Name</label>
             <div className="relative">
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ce-text-muted pointer-events-none">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -114,15 +142,15 @@ export default function RegisterPage() {
               <input
                 type="text"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 rounded-xl text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus transition-all duration-200"
                 style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
-                placeholder="Choose a username"
+                placeholder="Your display name"
               />
             </div>
-            {fieldErrors.username && (
-              <p className="text-xs mt-1.5 ml-1" style={{ color: 'var(--color-ce-danger)' }}>{fieldErrors.username[0]}</p>
+            {fieldErrors.userName && (
+              <p className="text-xs mt-1.5 ml-1" style={{ color: 'var(--color-ce-danger)' }}>{fieldErrors.userName[0]}</p>
             )}
           </div>
 

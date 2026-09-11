@@ -96,6 +96,17 @@ async function removeMember(req, res) {
   res.json({ status: "success", message: "Member removed" });
 }
 
+/** PATCH /api/workspaces/:workspaceId/members/:userId — change member role (OWNER only) */
+async function updateMemberRole(req, res) {
+  const member = await workspaceService.updateMemberRole({
+    workspaceId: req.params.workspaceId,
+    memberUserId: req.params.userId,
+    newRole: req.body.role,
+  });
+
+  res.json({ status: "success", data: { member } });
+}
+
 /** DELETE /api/workspaces/:workspaceId */
 async function remove(req, res) {
   await workspaceService.deleteWorkspace(req.params.workspaceId);
@@ -114,5 +125,6 @@ module.exports = {
   listWorkspaceInvitations,
   revokeInvitation,
   removeMember,
+  updateMemberRole,
   remove,
 };

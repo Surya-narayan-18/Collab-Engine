@@ -14,34 +14,46 @@ const JWT_EXPIRY = "24h";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Simple email check — used to distinguish email from userId during login.
+ */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
  * Register a new user.
- * @param {{ email: string, username: string, password: string }} data
+ * @param {{ email: string, userId: string, userName: string, password: string }} data
  * @returns {Promise<{ user: object, token: string }>}
  */
-async function register({ email, username, password }) {
-  // Check if email or username already taken
+async function register({ email, userId, userName, password }) {
+  // Normalize userId for case-insensitive uniqueness
+  const normalizedUserId = userId.toLowerCase();
+
+  // Check if email or userId already taken (case-insensitive for userId)
   const existing = await prisma.user.findFirst({
     where: {
-      OR: [{ email }, { username }],
+      OR: [
+        { email },
+        { userId: normalizedUserId },
+      ],
     },
-    select: { email: true, username: true },
+    select: { email: true, userId: true },
   });
 
   if (existing) {
     if (existing.email === email) {
       throw new AppError(409, "Email already in use");
     }
-    throw new AppError(409, "Username already taken");
+    throw new AppError(409, "User ID already taken");
   }
 
   // Hash password
   const hashedPassword = await bcrypt.hash(password, BCRYPT_COST_FACTOR);
 
-  // Create user
+  // Create user (store userId lowercase)
   const user = await prisma.user.create({
     data: {
       email,
-      username,
+      userId: normalizedUserId,
+      userName,
       password: hashedPassword,
     },
     select: safeUserSelect,
@@ -63,11 +75,18 @@ async function register({ email, username, password }) {
  */
 async function login({ identifier, password }) {
   const isUUID = UUID_RE.test(identifier);
+  const isEmail = EMAIL_RE.test(identifier);
 
-  // Resolve user by id or email
-  const user = isUUID
-    ? await prisma.user.findUnique({ where: { id: identifier } })
-    : await prisma.user.findUnique({ where: { email: identifier.toLowerCase() } });
+  // Resolve user by id, email, or userId
+  let user;
+  if (isUUID) {
+    user = await prisma.user.findUnique({ where: { id: identifier } });
+  } else if (isEmail) {
+    user = await prisma.user.findUnique({ where: { email: identifier.toLowerCase() } });
+  } else {
+    // Treat as userId — case-insensitive lookup
+    user = await prisma.user.findUnique({ where: { userId: identifier.toLowerCase() } });
+  }
 
   if (!user) {
     throw new AppError(401, "Invalid credentials");
@@ -107,13 +126,13 @@ async function getCurrentUser(userId) {
 
 /**
  * Generate a JWT for the given user.
- * Payload contains only userId and username — nothing sensitive.
- * @param {{ id: string, username: string }} user
+ * Payload: sub (UUID PK), handle (unique userId), displayName.
+ * @param {{ id: string, userId: string, userName: string }} user
  * @returns {string}
  */
 function generateToken(user) {
   return jwt.sign(
-    { userId: user.id, username: user.username },
+    { sub: user.id, handle: user.userId, displayName: user.userName },
     config.JWT_SECRET,
     { expiresIn: JWT_EXPIRY }
   );
