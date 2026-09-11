@@ -21,114 +21,148 @@ function RoleBadge({ role }) {
   );
 }
 
-function MemberActions({ member, workspaceId, canManage, isOwner, currentUserId, onError }) {
+function MemberCard({ member, workspaceId, canManage, isOwner, currentUserId, onClose, onError }) {
   const { removeMember, updateMemberRole } = useWorkspace();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Don't show actions for self, OWNER members, or if user can't manage
-  if (!canManage || member.role === "OWNER" || member.user?.id === currentUserId) {
-    return null;
-  }
+  const u = member.user;
+  const isSelf = u?.id === currentUserId;
+  const isTargetOwner = member.role === "OWNER";
+  const showActions = canManage && !isSelf && !isTargetOwner;
 
   async function handleRemove() {
-    if (!confirm(`Remove ${member.user?.userName} from this workspace?`)) return;
+    if (!confirm(`Remove ${u?.userName} from this workspace?`)) return;
     setLoading(true);
     try {
-      await removeMember(workspaceId, member.user?.id);
+      await removeMember(workspaceId, u?.id);
+      onClose();
     } catch (err) {
       onError(err.message);
     } finally {
       setLoading(false);
-      setOpen(false);
     }
   }
 
   async function handleRoleChange(newRole) {
     setLoading(true);
     try {
-      await updateMemberRole(workspaceId, member.user?.id, newRole);
+      await updateMemberRole(workspaceId, u?.id, newRole);
+      onClose();
     } catch (err) {
       onError(err.message);
     } finally {
       setLoading(false);
-      setOpen(false);
     }
   }
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        disabled={loading}
-        className="member-action-trigger"
-        title="Member actions"
-      >
-        {loading ? (
-          <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-        ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="5" r="1" />
-            <circle cx="12" cy="12" r="1" />
-            <circle cx="12" cy="19" r="1" />
-          </svg>
-        )}
-      </button>
+    <div className="fixed inset-0 flex items-center justify-center z-[200] animate-fade-in"
+         style={{ background: 'rgba(0, 0, 0, 0.5)' }}
+         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="card-elevated rounded-2xl w-full max-w-xs mx-4 animate-scale-in overflow-hidden"
+           style={{ border: '1px solid var(--color-ce-border)' }}>
 
-      {/* Dropdown menu */}
-      {open && (
-        <>
-          {/* Backdrop to close dropdown */}
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="member-actions-dropdown animate-scale-in">
-            {/* Role changes — OWNER only */}
-            {isOwner && (
-              <>
-                {member.role === "MEMBER" && (
-                  <button
-                    onClick={() => handleRoleChange("ADMIN")}
-                    className="member-actions-item"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
-                    Make Admin
-                  </button>
-                )}
-                {member.role === "ADMIN" && (
-                  <button
-                    onClick={() => handleRoleChange("MEMBER")}
-                    className="member-actions-item"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    Make Member
-                  </button>
-                )}
-                <div className="member-actions-divider" />
-              </>
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center text-ce-text-muted hover:text-ce-text-primary hover:bg-ce-bg-hover transition-all cursor-pointer"
+          style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10 }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
+        {/* User info */}
+        <div className="pt-6 pb-4 px-5 flex flex-col items-center text-center">
+          {/* Large avatar */}
+          <div className={`w-16 h-16 rounded-full avatar-color-${avatarIndex(u?.userId)} flex items-center justify-center text-white text-2xl font-bold mb-3`}>
+            {u?.userName?.[0]?.toUpperCase() || "?"}
+          </div>
+
+          {/* Display name */}
+          <h4 className="text-base font-semibold text-ce-text-primary leading-tight">
+            {u?.userName}
+            {isSelf && <span className="text-ce-text-muted text-xs ml-1.5 font-normal">(you)</span>}
+          </h4>
+
+          {/* User ID */}
+          <p className="text-xs text-ce-text-muted mt-1 font-mono" style={{ color: 'var(--color-ce-accent)', opacity: 0.8 }}>
+            @{u?.userId}
+          </p>
+
+          {/* Email */}
+          <p className="text-xs text-ce-text-muted mt-0.5">{u?.email}</p>
+
+          {/* Role badge */}
+          <div className="mt-3">
+            <RoleBadge role={member.role} />
+          </div>
+        </div>
+
+        {/* Actions — visible to OWNER/ADMIN only, not for self or OWNER target */}
+        {showActions && (
+          <div className="px-4 pb-4 space-y-2"
+               style={{ borderTop: '1px solid var(--color-ce-border)', paddingTop: '12px' }}>
+            {/* Role change */}
+            {isOwner && member.role === "MEMBER" && (
+              <button
+                onClick={() => handleRoleChange("ADMIN")}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer"
+                style={{
+                  color: 'var(--color-ce-accent)',
+                  background: 'rgba(99, 102, 241, 0.08)',
+                  border: '1px solid rgba(99, 102, 241, 0.2)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                {loading ? "Updating..." : "Make Admin"}
+              </button>
+            )}
+            {isOwner && member.role === "ADMIN" && (
+              <button
+                onClick={() => handleRoleChange("MEMBER")}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer"
+                style={{
+                  color: 'var(--color-ce-text-secondary)',
+                  background: 'var(--color-ce-bg-tertiary)',
+                  border: '1px solid var(--color-ce-border)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                {loading ? "Updating..." : "Demote to Member"}
+              </button>
             )}
 
             {/* Remove */}
             <button
               onClick={handleRemove}
-              className="member-actions-item member-actions-danger"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all cursor-pointer"
+              style={{
+                color: 'var(--color-ce-danger)',
+                background: 'rgba(239, 68, 68, 0.06)',
+                border: '1px solid rgba(239, 68, 68, 0.15)',
+              }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
                 <line x1="17" y1="11" x2="22" y2="11" />
               </svg>
-              Remove
+              {loading ? "Removing..." : "Remove from Workspace"}
             </button>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -142,6 +176,7 @@ export default function MemberPanel({ workspaceId, onClose }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
 
   const members = currentWorkspace?.members || [];
   const myMembership = members.find((m) => m.user?.id === user?.id);
@@ -228,65 +263,35 @@ export default function MemberPanel({ workspaceId, onClose }) {
               </button>
             </div>
 
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-ce-text-muted pointer-events-none">
-                  {inviteMode === "email" ? (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="4" width="20" height="16" rx="2" />
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                      <polyline points="10 17 15 12 10 7" />
-                      <line x1="15" y1="12" x2="3" y2="12" />
-                    </svg>
-                  )}
-                </div>
-                {inviteMode === "email" ? (
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@example.com"
-                    disabled={loading}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus transition-all duration-200 disabled:opacity-50"
-                    style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
-                    id="invite-email-input"
-                  />
-                ) : (
-                  <input
-                    type="text"
-                    required
-                    value={userId}
-                    onChange={(e) => setUserId(e.target.value)}
-                    placeholder="Paste user ID (UUID)"
-                    pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-                    title="Enter a valid UUID"
-                    disabled={loading}
-                    className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus transition-all duration-200 disabled:opacity-50"
-                    style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
-                    id="invite-userid-input"
-                  />
-                )}
-              </div>
+            <div className="flex items-center gap-2">
+              {inviteMode === "email" ? (
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg text-sm text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus"
+                  style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
+                  placeholder="colleague@company.com"
+                />
+              ) : (
+                <input
+                  type="text"
+                  required
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg text-sm text-ce-text-primary placeholder-ce-text-muted focus:outline-none input-focus"
+                  style={{ background: 'var(--color-ce-bg-secondary)', border: '1px solid var(--color-ce-border)' }}
+                  placeholder="Enter user ID"
+                />
+              )}
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2.5 text-white text-sm font-semibold rounded-xl transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none cursor-pointer"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all cursor-pointer disabled:opacity-50"
                 style={{ background: 'var(--color-ce-accent)' }}
-                onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = 'var(--color-ce-accent-hover)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-ce-accent)'; }}
-                id="invite-submit-btn"
               >
-                {loading ? (
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : "Send Invite"}
+                {loading ? "..." : "Invite"}
               </button>
             </div>
             {error && (
@@ -315,7 +320,8 @@ export default function MemberPanel({ workspaceId, onClose }) {
           {members.map((m) => (
             <div
               key={m.user?.id || m.id}
-              className="flex items-center justify-between py-2.5 px-3 rounded-xl transition-colors group hover:bg-ce-bg-hover"
+              className="flex items-center justify-between py-2.5 px-3 rounded-xl transition-colors group hover:bg-ce-bg-hover cursor-pointer"
+              onClick={() => setSelectedMember(m)}
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-9 h-9 rounded-full avatar-color-${avatarIndex(m.user?.userId)} flex items-center justify-center text-white text-sm font-semibold flex-shrink-0`}>
@@ -331,22 +337,24 @@ export default function MemberPanel({ workspaceId, onClose }) {
                   <p className="text-xs text-ce-text-muted truncate">{m.user?.email}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <RoleBadge role={m.role} />
-                <MemberActions
-                  member={m}
-                  workspaceId={workspaceId}
-                  canManage={canManage}
-                  isOwner={isOwner}
-                  currentUserId={user?.id}
-                  onError={setError}
-                />
-              </div>
+              <RoleBadge role={m.role} />
             </div>
           ))}
         </div>
       </div>
+
+      {/* Member detail card — appears on top when a member is clicked */}
+      {selectedMember && (
+        <MemberCard
+          member={selectedMember}
+          workspaceId={workspaceId}
+          canManage={canManage}
+          isOwner={isOwner}
+          currentUserId={user?.id}
+          onClose={() => setSelectedMember(null)}
+          onError={setError}
+        />
+      )}
     </div>
   );
 }
-
