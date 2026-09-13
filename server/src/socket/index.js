@@ -131,7 +131,13 @@ function initSocket(httpServer) {
     });
 
     // ── Typing indicators ────────────────────────────────────────────
-    socket.on("typing:start", (channelId) => {
+    socket.on("typing:start", async (channelId) => {
+      // Verify channel membership before broadcasting
+      const membership = await prisma.channelMember.findUnique({
+        where: { userId_channelId: { userId, channelId } },
+      });
+      if (!membership) return;
+
       socket.to(`channel:${channelId}`).emit("typing:update", {
         userId,
         userName,
@@ -140,7 +146,13 @@ function initSocket(httpServer) {
       });
     });
 
-    socket.on("typing:stop", (channelId) => {
+    socket.on("typing:stop", async (channelId) => {
+      // Verify channel membership before broadcasting
+      const membership = await prisma.channelMember.findUnique({
+        where: { userId_channelId: { userId, channelId } },
+      });
+      if (!membership) return;
+
       socket.to(`channel:${channelId}`).emit("typing:update", {
         userId,
         userName,

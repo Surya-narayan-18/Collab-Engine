@@ -1,4 +1,36 @@
 import { Link } from "react-router";
+import { useRef, useEffect, useState } from "react";
+
+/* Scroll-reveal wrapper: children start invisible, animate in when scrolled into view */
+function ScrollReveal({ children, className = "" }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.unobserve(el); } },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(30px)',
+        transition: 'opacity 0.6s ease-out, transform 0.6s ease-out',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 function FeatureCard({ icon, title, description }) {
   return (
@@ -72,7 +104,7 @@ export default function LandingPage() {
         <div className="absolute bottom-10 left-5 w-48 h-48 rounded-full opacity-[0.03]"
              style={{ background: 'var(--color-ce-accent)' }} />
 
-        <div className="w-full mx-auto px-8 sm:px-12 lg:px-16 pt-20 pb-24 sm:pt-28 sm:pb-32">
+        <div className="w-full mx-auto px-8 sm:px-12 lg:px-16 pt-20 pb-32 sm:pt-28 sm:pb-40 min-h-[calc(100vh-64px)] flex items-center">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
             {/* Left — Copy */}
             <div className="animate-fade-in-up">
@@ -211,58 +243,64 @@ export default function LandingPage() {
       {/* ====== Features Section ====== */}
       <section id="features" className="py-20 sm:py-28" style={{ background: 'var(--color-ce-bg-secondary)' }}>
         <div className="w-full mx-auto px-8 sm:px-12 lg:px-16">
-          <div className="text-center mb-14 animate-fade-in-up">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-ce-accent)' }}>Features</p>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-ce-text-primary mb-4">Everything your team needs</h2>
-            <p className="text-base text-ce-text-tertiary max-w-lg mx-auto">Powerful collaboration tools in a clean, focused interface — no distractions, just productivity.</p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center mb-14">
+              <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-ce-accent)' }}>Features</p>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-ce-text-primary mb-4">Everything your team needs</h2>
+              <p className="text-base text-ce-text-tertiary max-w-lg mx-auto">Powerful collaboration tools in a clean, focused interface — no distractions, just productivity.</p>
+            </div>
+          </ScrollReveal>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger-children">
-            <FeatureCard
-              icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3L8 21"/><path d="M16 3l-2 18"/></svg>}
-              title="Channels"
-              description="Organized conversations by topic, project, or team — join any channel with one click."
-            />
-            <FeatureCard
-              icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
-              title="Real-time Messaging"
-              description="Instant delivery with typing indicators, read receipts, and message grouping."
-            />
-            <FeatureCard
-              icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
-              title="Workspaces & Teams"
-              description="Create workspaces, invite members, manage roles — OWNER, ADMIN, or MEMBER."
-            />
-            <FeatureCard
-              icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>}
-              title="Live Presence"
-              description="See who's online right now with real-time presence indicators and status dots."
-            />
-          </div>
+          <ScrollReveal>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <FeatureCard
+                icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3L8 21"/><path d="M16 3l-2 18"/></svg>}
+                title="Channels"
+                description="Organized conversations by topic, project, or team — join any channel with one click."
+              />
+              <FeatureCard
+                icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+                title="Real-time Messaging"
+                description="Instant delivery with typing indicators, read receipts, and message grouping."
+              />
+              <FeatureCard
+                icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+                title="Workspaces & Teams"
+                description="Create workspaces, invite members, manage roles — OWNER, ADMIN, or MEMBER."
+              />
+              <FeatureCard
+                icon={<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2F6FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>}
+                title="Live Presence"
+                description="See who's online right now with real-time presence indicators and status dots."
+              />
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ====== Stats / Social Proof Section ====== */}
       <section id="stats" className="py-20 sm:py-24">
         <div className="w-full mx-auto px-8 sm:px-12 lg:px-16">
-          <div className="card-elevated rounded-2xl p-10 sm:p-14 animate-fade-in-up">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-ce-text-primary mb-3">Trusted by growing teams</h2>
-              <p className="text-base text-ce-text-tertiary">Fast, reliable, and built for the way modern teams work.</p>
+          <ScrollReveal>
+            <div className="card-elevated rounded-2xl p-10 sm:p-14">
+              <div className="text-center mb-12">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-ce-text-primary mb-3">Trusted by growing teams</h2>
+                <p className="text-base text-ce-text-tertiary">Fast, reliable, and built for the way modern teams work.</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-12">
+                <StatCard value="10k+" label="Active teams" />
+                <StatCard value="1M+" label="Messages sent" />
+                <StatCard value="99.9%" label="Uptime SLA" />
+                <StatCard value="<50ms" label="Message latency" />
+              </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-12">
-              <StatCard value="10k+" label="Active teams" />
-              <StatCard value="1M+" label="Messages sent" />
-              <StatCard value="99.9%" label="Uptime SLA" />
-              <StatCard value="<50ms" label="Message latency" />
-            </div>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ====== CTA Section ====== */}
       <section className="py-20 sm:py-24" style={{ background: 'var(--color-ce-bg-secondary)' }}>
-        <div className="max-w-5xl mx-auto px-8 sm:px-12 lg:px-16 text-center animate-fade-in-up">
+        <ScrollReveal className="max-w-5xl mx-auto px-8 sm:px-12 lg:px-16 text-center">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-ce-text-primary mb-4">
             Ready to streamline your team&apos;s communication?
           </h2>
@@ -282,7 +320,7 @@ export default function LandingPage() {
               </svg>
             </Link>
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* ====== Footer ====== */}

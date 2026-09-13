@@ -5,7 +5,8 @@ const createMessageSchema = z.object({
     .string()
     .trim()
     .min(1, "Message content is required")
-    .max(4000, "Message must be at most 4000 characters"),
+    .max(4000, "Message must be at most 4000 characters")
+    .refine((val) => !val.includes("\u0000"), "Message contains invalid characters"),
 });
 
 module.exports = { createMessageSchema };
