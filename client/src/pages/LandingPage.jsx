@@ -27,7 +27,7 @@ export default function LandingPage() {
     <div className="min-h-screen" style={{ background: 'var(--color-ce-bg-primary)' }}>
       {/* ====== Navbar ====== */}
       <nav className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm" style={{ borderBottom: '1px solid var(--color-ce-border)' }}>
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="w-full mx-auto px-8 sm:px-12 lg:px-16 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="inline-flex items-center gap-2.5 no-underline">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
@@ -72,8 +72,8 @@ export default function LandingPage() {
         <div className="absolute bottom-10 left-5 w-48 h-48 rounded-full opacity-[0.03]"
              style={{ background: 'var(--color-ce-accent)' }} />
 
-        <div className="max-w-6xl mx-auto px-6 pt-20 pb-24 sm:pt-28 sm:pb-32">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="w-full mx-auto px-8 sm:px-12 lg:px-16 pt-20 pb-24 sm:pt-28 sm:pb-32">
+          <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
             {/* Left — Copy */}
             <div className="animate-fade-in-up">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-6"
@@ -111,7 +111,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right — Product Illustration */}
-            <div className="hidden lg:block animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="hidden md:block animate-fade-in" style={{ animationDelay: '0.2s' }}>
               <div className="relative">
                 {/* Mock app window */}
                 <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--color-ce-border)', boxShadow: 'var(--shadow-xl)' }}>
@@ -210,7 +210,7 @@ export default function LandingPage() {
 
       {/* ====== Features Section ====== */}
       <section id="features" className="py-20 sm:py-28" style={{ background: 'var(--color-ce-bg-secondary)' }}>
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="w-full mx-auto px-8 sm:px-12 lg:px-16">
           <div className="text-center mb-14 animate-fade-in-up">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-ce-accent)' }}>Features</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-ce-text-primary mb-4">Everything your team needs</h2>
@@ -244,7 +244,7 @@ export default function LandingPage() {
 
       {/* ====== Stats / Social Proof Section ====== */}
       <section id="stats" className="py-20 sm:py-24">
-        <div className="max-w-4xl mx-auto px-6">
+        <div className="w-full mx-auto px-8 sm:px-12 lg:px-16">
           <div className="card-elevated rounded-2xl p-10 sm:p-14 animate-fade-in-up">
             <div className="text-center mb-12">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-ce-text-primary mb-3">Trusted by growing teams</h2>
@@ -262,7 +262,7 @@ export default function LandingPage() {
 
       {/* ====== CTA Section ====== */}
       <section className="py-20 sm:py-24" style={{ background: 'var(--color-ce-bg-secondary)' }}>
-        <div className="max-w-3xl mx-auto px-6 text-center animate-fade-in-up">
+        <div className="max-w-5xl mx-auto px-8 sm:px-12 lg:px-16 text-center animate-fade-in-up">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-ce-text-primary mb-4">
             Ready to streamline your team&apos;s communication?
           </h2>
@@ -287,7 +287,7 @@ export default function LandingPage() {
 
       {/* ====== Footer ====== */}
       <footer style={{ borderTop: '1px solid var(--color-ce-border)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="w-full mx-auto px-8 sm:px-12 lg:px-16 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md flex items-center justify-center"
                  style={{ background: 'var(--color-ce-accent)' }}>

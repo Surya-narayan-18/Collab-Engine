@@ -82,6 +82,14 @@ export function WorkspaceProvider({ children }) {
     setCurrentWorkspace(wsRes.data.workspace);
   }, []);
 
+  const deleteWorkspace = useCallback(async (workspaceId) => {
+    await del(`/workspaces/${workspaceId}`);
+    // Clear current workspace if it was the deleted one
+    setCurrentWorkspace((prev) => (prev?.id === workspaceId ? null : prev));
+    // Refresh workspace list
+    await fetchWorkspaces();
+  }, [fetchWorkspaces]);
+
   // Fetch pending invitations for the current user
   const fetchInvitations = useCallback(async () => {
     try {
@@ -127,6 +135,7 @@ export function WorkspaceProvider({ children }) {
         sendInvitation,
         removeMember,
         updateMemberRole,
+        deleteWorkspace,
         fetchInvitations,
         acceptInvitation,
         declineInvitation,

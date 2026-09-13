@@ -607,4 +607,24 @@ a:focus-visible {
   }
 }
 
+/* --- Workspace Card Grid --- */
+.ws-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
 
+@media (max-width: 640px) {
+  .ws-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ws-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ws-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
